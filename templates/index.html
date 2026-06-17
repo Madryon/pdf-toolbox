@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF & Image Toolbox</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #1a202c;
+    padding: 24px 16px 60px;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+  header { text-align: center; color: white; margin-bottom: 28px; }
+  header h1 { font-size: 30px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px; }
+  header p { font-size: 15px; opacity: 0.92; }
+  .tabs {
+    display: flex;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 14px 14px 0 0;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  }
+  .tab {
+    flex: 1;
+    padding: 16px 8px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    color: #718096;
+    background: #f7fafc;
+    border: none;
+    font-size: 14px;
+    transition: all 0.18s;
+  }
+  .tab:hover { background: #edf2f7; color: #4a5568; }
+  .tab.active { background: white; color: #5a67d8; }
+  .panel {
+    background: white;
+    border-radius: 0 0 14px 14px;
+    padding: 28px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+    display: none;
+  }
+  .panel.active { display: block; }
+  .dropzone {
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    padding: 44px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.18s;
+    background: #f7fafc;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: #5a67d8;
+    background: #ebf4ff;
+  }
+  .dropzone svg { width: 44px; height: 44px; color: #a0aec0; margin-bottom: 10px; }
+  .dropzone .title { color: #2d3748; font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .dropzone .hint { color: #a0aec0; font-size: 13px; }
+  input[type="file"] { display: none; }
+  .file-list { margin-top: 14px; max-height: 240px; overflow-y: auto; }
+  .file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: #f7fafc;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: #2d3748;
+  }
+  .file-item .meta { color: #718096; font-size: 12px; margin-left: 8px; }
+  .file-item .remove {
+    color: #e53e3e;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 4px;
+    user-select: none;
+  }
+  .file-item .remove:hover { background: #fff5f5; }
+  .file-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+  .options { margin-top: 22px; padding: 18px; background: #f7fafc; border-radius: 10px; }
+  .option-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .option-row:last-child { margin-bottom: 0; }
+  .option-row label { font-size: 14px; color: #4a5568; font-weight: 500; min-width: 130px; }
+  .option-row input[type="number"], .option-row select {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    color: #2d3748;
+  }
+  .option-row input[type="number"] { width: 110px; }
+  .option-row input[type="range"] { width: 220px; accent-color: #5a67d8; }
+  .option-row .val { color: #5a67d8; font-weight: 600; min-width: 32px; }
+  .submit-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 18px;
+    transition: transform 0.1s, box-shadow 0.18s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+  }
+  .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(102, 126, 234, 0.45); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .status {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+    word-break: break-all;
+  }
+  .status.show { display: block; }
+  .status.info { background: #ebf4ff; color: #2c5282; }
+  .status.error { background: #fff5f5; color: #c53030; }
+  .status.success { background: #f0fff4; color: #276749; }
+  footer { text-align: center; color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 24px; }
+  @media (max-width: 600px) {
+    .tab { font-size: 12px; padding: 14px 4px; }
+    .panel { padding: 20px 16px; }
+    .option-row label { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📄 PDF & Image Toolbox</h1>
+    <p>Merge · Compress · Convert — all in your browser</p>
+  </header>
+  <div class="tabs">
+    <button class="tab active" data-tab="merge">🔗 Merge</button>
+    <button class="tab" data-tab="compress">🗜️ Compress</button>
+    <button class="tab" data-tab="convert">🔄 Convert</button>
+    <button class="tab" data-tab="img2pdf">🖼️ Images → PDF</button>
+  </div>
+
+  <div class="panel active" id="merge">
+    <div class="dropzone" data-input="mergeFiles">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+      <div class="title">Drop PDFs or images here, or click to select</div>
+      <div class="hint">Mix PDFs, PNG, JPG, WebP, BMP, TIFF — they'll be combined in order</div>
+      <input type="file" id="mergeFiles" multiple>
+    </div>
+    <div class="file-list" id="mergeList"></div>
+    <button class="submit-btn" id="mergeBtn">Merge into PDF</button>
+    <div class="status" id="mergeStatus"></div>
+  </div>
+
+  <div class="panel" id="compress">
+    <div class="dropzone" data-input="compressFile">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      <div class="title">Drop a PDF or image to compress</div>
+      <div class="hint">PDF, PNG, JPG, JPEG, WebP, BMP, TIFF</div>
+      <input type="file" id="compressFile">
+    </div>
+    <div class="file-list" id="compressList"></div>
+    <div class="options">
+      <div class="option-row">
+        <label>Quality:</label>
+        <input type="range" id="cmpQuality" min="10" max="95" value="60">
+        <span class="val" id="cmpQualityVal">60</span>
+      </div>
+      <div class="option-row">
+        <label>Max dimension (px):</label>
+        <input type="number" id="cmpMaxDim" value="1600" min="0" max="8000">
+      </div>
+      <div class="option-row">
+        <label>PDF rasterize DPI:</label>
+        <input type="number" id="cmpDpi" value="120" min="72" max="300">
+      </div>
+      <div class="option-row">
+        <label>PDF compression:</label>
+        <select id="cmpMode">
+          <option value="auto">Auto (smart, recommended)</option>
+          <option value="native">Native (keeps text, smaller savings)</option>
+          <option value="rasterize">Rasterize (smallest files, no text)</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit-btn" id="compressBtn">Compress</button>
+    <div class="status" id="compressStatus"></div>
+  </div>
+
+  <div class="panel" id="convert">
+    <div class="dropzone" data-input="convertFile">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      <div class="title">Drop a file to convert</div>
+      <div class="hint">PDF ↔ Image, Image ↔ Image (multi-page PDFs come back as a ZIP)</div>
+      <input type="file" id="convertFile">
+    </div>
+    <div class="file-list" id="convertList"></div>
+    <div class="options">
+      <div class="option-row">
+        <label>Output format:</label>
+        <select id="convFormat">
+          <option value="pdf">PDF</option>
+          <option value="png">PNG</option>
+          <option value="jpg">JPEG</option>
+          <option value="webp">WebP</option>
+          <option value="bmp">BMP</option>
+          <option value="tiff">TIFF</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <label>Image quality:</label>
+        <input type="number" id="convQuality" value="85" min="10" max="100">
+      </div>
+      <div class="option-row">
+        <label>PDF→Image DPI:</label>
+        <input type="number" id="convDpi" value="150" min="72" max="600">
+      </div>
+    </div>
+    <button class="submit-btn" id="convertBtn">Convert</button>
+    <div class="status" id="convertStatus"></div>
+  </div>
+
+  <div class="panel" id="img2pdf">
+    <div class="dropzone" data-input="imgFiles">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <div class="title">Drop images to combine into one PDF</div>
+      <div class="hint">PNG, JPG, JPEG, WebP, BMP, TIFF — order is preserved</div>
+      <input type="file" id="imgFiles" multiple accept="image/*">
+    </div>
+    <div class="file-list" id="imgList"></div>
+    <button class="submit-btn" id="imgBtn">Create PDF</button>
+    <div class="status" id="imgStatus"></div>
+  </div>
+
+  <footer>Built with Flask · pypdf · pypdfium2 · Pillow</footer>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  };
+});
+
+const state = {};
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+function setupDropzone(inputId, listId, multiple) {
+  const zone = document.querySelector(`[data-input="${inputId}"]`);
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  state[listId] = [];
+
+  zone.onclick = () => input.click();
+  input.onchange = (e) => { addFiles(Array.from(e.target.files)); };
+  zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('dragover'); };
+  zone.ondragleave = () => zone.classList.remove('dragover');
+  zone.ondrop = (e) => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    addFiles(Array.from(e.dataTransfer.files));
+  };
+
+  function addFiles(newFiles) {
+    if (multiple) {
+      state[listId] = state[listId].concat(newFiles);
+    } else {
+      state[listId] = newFiles.slice(0, 1);
+    }
+    render();
+  }
+
+  function render() {
+    list.innerHTML = state[listId].map((f, i) =>
+      `<div class="file-item"><span class="name">${escapeHtml(f.name)}<span class="meta">${fmtSize(f.size)}</span></span><span class="remove" data-i="${i}">✕</span></div>`
+    ).join('');
+    list.querySelectorAll('.remove').forEach(el => {
+      el.onclick = () => { state[listId].splice(parseInt(el.dataset.i), 1); render(); };
+    });
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+setupDropzone('mergeFiles', 'mergeList', true);
+setupDropzone('compressFile', 'compressList', false);
+setupDropzone('convertFile', 'convertList', false);
+setupDropzone('imgFiles', 'imgList', true);
+
+document.getElementById('cmpQuality').oninput = (e) => {
+  document.getElementById('cmpQualityVal').textContent = e.target.value;
+};
+
+function setStatus(id, text, kind) {
+  const el = document.getElementById(id);
+  el.className = 'status show ' + kind;
+  el.textContent = text;
+}
+
+async function postForm(url, formData) {
+  const r = await fetch(url, { method: 'POST', body: formData });
+  if (!r.ok) {
+    let msg = `request failed (${r.status})`;
+    try { const j = await r.json(); msg = j.error || msg; } catch {}
+    throw new Error(msg);
+  }
+  return await r.blob();
+}
+
+function downloadBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+function setLoading(btnId, statusId, on) {
+  document.getElementById(btnId).disabled = on;
+  if (on) setStatus(statusId, 'Working... this can take a moment for large files', 'info');
+}
+
+document.getElementById('mergeBtn').onclick = async () => {
+  const files = state.mergeList;
+  if (files.length < 1) { setStatus('mergeStatus', 'Add at least one file', 'error'); return; }
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
+  setLoading('mergeBtn', 'mergeStatus', true);
+  try {
+    const blob = await postForm('/merge', fd);
+    downloadBlob(blob, 'merged.pdf');
+    setStatus('mergeStatus', '✓ Done — merged.pdf downloaded', 'success');
+  } catch (e) {
+    setStatus('mergeStatus', '✗ ' + e.message, 'error');
+  }
+  setLoading('mergeBtn', 'mergeStatus', false);
+};
+
+document.getElementById('compressBtn').onclick = async () => {
+  const files = state.compressList;
+  if (files.length !== 1) { setStatus('compressStatus', 'Select exactly one file', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', files[0]);
+  fd.append('quality', document.getElementById('cmpQuality').value);
+  fd.append('max_dimension', document.getElementById('cmpMaxDim').value);
+  fd.append('dpi', document.getElementById('cmpDpi').value);
+  fd.append('mode', document.getElementById('cmpMode').value);
+  setLoading('compressBtn', 'compressStatus', true);
+  try {
+    const blob = await postForm('/compress', fd);
+    const orig = files[0];
+    const base = orig.name.replace(/\.[^.]+$/, '');
+    const ext = orig.name.split('.').pop();
+    downloadBlob(blob, `${base}_compressed.${ext}`);
+    const savings = ((1 - blob.size / orig.size) * 100).toFixed(1);
+    const sign = blob.size <= orig.size ? 'smaller' : 'larger';
+    setStatus('compressStatus',
+      `✓ Done — ${fmtSize(orig.size)} → ${fmtSize(blob.size)} (${Math.abs(savings)}% ${sign})`,
+      'success');
+  } catch (e) {
+    setStatus('compressStatus', '✗ ' + e.message, 'error');
+  }
+  setLoading('compressBtn', 'compressStatus', false);
+};
+
+document.getElementById('convertBtn').onclick = async () => {
+  const files = state.convertList;
+  if (files.length !== 1) { setStatus('convertStatus', 'Select exactly one file', 'error'); return; }
+  const fmt = document.getElementById('convFormat').value;
+  const fd = new FormData();
+  fd.append('file', files[0]);
+  fd.append('format', fmt);
+  fd.append('quality', document.getElementById('convQuality').value);
+  fd.append('dpi', document.getElementById('convDpi').value);
+  setLoading('convertBtn', 'convertStatus', true);
+  try {
+    const blob = await postForm('/convert', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const isPdfToImg = files[0].name.toLowerCase().endsWith('.pdf') && fmt !== 'pdf';
+    const name = isPdfToImg ? `${base}_pages.zip` : `${base}.${fmt}`;
+    downloadBlob(blob, name);
+    setStatus('convertStatus', '✓ Done — ' + name + ' downloaded', 'success');
+  } catch (e) {
+    setStatus('convertStatus', '✗ ' + e.message, 'error');
+  }
+  setLoading('convertBtn', 'convertStatus', false);
+};
+
+document.getElementById('imgBtn').onclick = async () => {
+  const files = state.imgList;
+  if (files.length < 1) { setStatus('imgStatus', 'Add at least one image', 'error'); return; }
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
+  setLoading('imgBtn', 'imgStatus', true);
+  try {
+    const blob = await postForm('/images-to-pdf', fd);
+    downloadBlob(blob, 'images.pdf');
+    setStatus('imgStatus', '✓ Done — images.pdf downloaded', 'success');
+  } catch (e) {
+    setStatus('imgStatus', '✗ ' + e.message, 'error');
+  }
+  setLoading('imgBtn', 'imgStatus', false);
+};
+</script>
+</body>
+</html>
