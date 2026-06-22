@@ -4,301 +4,524 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PDF & Image Toolbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --ink: #0A0805;
+    --ink-soft: #14110A;
+    --ink-raised: #1C170E;
+    --ink-line: #322B1C;
+    --paper: #F1E9D8;
+    --paper-dim: #DED0AE;
+    --stamp: #BD3A2B;
+    --stamp-deep: #8F2A1F;
+    --brass: #C9A227;
+    --brass-soft: #8A7434;
+    --moss: #6E8C5C;
+    --text: #EFE6D3;
+    --text-muted: #A89878;
+    --text-faint: #6E6450;
+    --on-paper: #241E13;
+    --radius: 16px;
+    --radius-sm: 9px;
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: #000000;
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--ink);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(201,162,39,0.08), transparent 60%),
+      repeating-radial-gradient(circle at 0 0, rgba(255,255,255,0.015) 0, transparent 1px, transparent 3px);
+    background-size: auto, 3px 3px;
+    color: var(--text);
     min-height: 100vh;
-    color: #1a202c;
-    padding: 24px 16px 60px;
+    padding: 0 16px 64px;
   }
-  .container { max-width: 980px; margin: 0 auto; }
-  header { text-align: center; color: white; margin-bottom: 28px; }
-  header h1 { font-size: 30px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px; }
-  header p { font-size: 15px; opacity: 0.92; }
-  .tabs {
+
+  a { color: inherit; }
+
+  .topline {
+    height: 3px;
+    background: linear-gradient(90deg, var(--stamp), var(--brass) 50%, var(--stamp));
+    margin: 0 -16px;
+  }
+
+  .container { max-width: 760px; margin: 0 auto; }
+
+  header {
     display: flex;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 14px 14px 0 0;
-    overflow: hidden;
-    box-shadow: 0 6px 24px rgba(255, 255, 255, 0.08);
+    align-items: center;
+    gap: 16px;
+    padding: 34px 4px 22px;
   }
-  .tab {
-    flex: 1;
-    padding: 16px 8px;
-    text-align: center;
-    cursor: pointer;
+
+  .mark { flex-shrink: 0; }
+  .mark svg { width: 52px; height: 52px; display: block; }
+
+  .head-text { flex: 1; min-width: 0; }
+
+  header h1 {
+    font-family: 'Fraunces', serif;
     font-weight: 600;
-    color: #718096;
-    background: #f7fafc;
-    border: none;
-    font-size: 14px;
-    transition: all 0.18s;
+    font-size: 27px;
+    letter-spacing: -0.2px;
+    color: var(--text);
+    line-height: 1.15;
   }
-  .tab:hover { background: #edf2f7; color: #4a5568; }
-  .tab.active { background: white; color: #5a67d8; }
+
+  header p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--text-faint);
+    margin-top: 5px;
+    letter-spacing: 0.3px;
+  }
+
+  .rule {
+    height: 1px;
+    background: linear-gradient(90deg, var(--ink-line), transparent 85%);
+    margin-bottom: 28px;
+  }
+
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 14px 6px 13px;
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-sm);
+    background: var(--ink-soft);
+    color: var(--text-faint);
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.1s;
+  }
+  .tab svg { width: 19px; height: 19px; stroke: currentColor; transition: stroke 0.15s; }
+  .tab:hover { color: var(--text); border-color: var(--brass-soft); }
+  .tab.active {
+    background: var(--ink-raised);
+    color: var(--paper);
+    border-color: var(--brass);
+    box-shadow: inset 0 0 0 1px rgba(201,162,39,0.18);
+  }
+  .tab.active svg { stroke: var(--brass); }
+
   .panel {
-    background: white;
-    border-radius: 0 0 14px 14px;
-    padding: 28px;
-    box-shadow: 0 6px 24px rgba(255, 255, 255, 0.08);
     display: none;
+    background: var(--ink-soft);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius);
+    padding: 30px 26px 32px;
   }
-  .panel.active { display: block; }
+  .panel.active { display: block; animation: rise 0.25s ease; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  .panel-head { margin-bottom: 20px; }
+  .panel-head h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 19px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .panel-head p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
   .dropzone {
-    border: 2px dashed #cbd5e0;
-    border-radius: 12px;
-    padding: 44px 20px;
+    border: 1.5px dashed var(--ink-line);
+    border-radius: var(--radius-sm);
+    padding: 38px 18px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.18s;
-    background: #f7fafc;
+    transition: border-color 0.15s, background 0.15s;
+    background: var(--ink);
   }
-  .dropzone:hover, .dropzone.dragover {
-    border-color: #5a67d8;
-    background: #ebf4ff;
+  .dropzone:hover, .dropzone.dragover { border-color: var(--brass); background: var(--ink-raised); }
+  .dropzone:hover svg, .dropzone.dragover svg { stroke: var(--stamp); }
+  .dropzone svg { width: 30px; height: 30px; stroke: var(--text-faint); margin-bottom: 12px; transition: stroke 0.15s; }
+  .dropzone .title { font-size: 14.5px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .dropzone .hint {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-faint);
+    font-size: 11.5px;
+    letter-spacing: 0.2px;
   }
-  .dropzone svg { width: 44px; height: 44px; color: #a0aec0; margin-bottom: 10px; }
-  .dropzone .title { color: #2d3748; font-size: 15px; font-weight: 500; margin-bottom: 4px; }
-  .dropzone .hint { color: #a0aec0; font-size: 13px; }
   input[type="file"] { display: none; }
-  .file-list { margin-top: 14px; max-height: 240px; overflow-y: auto; }
+
+  .file-list { margin-top: 14px; max-height: 220px; overflow-y: auto; }
   .file-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 14px;
-    background: #f7fafc;
-    border-radius: 8px;
-    margin-bottom: 6px;
-    font-size: 14px;
-    color: #2d3748;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--ink-line);
+    font-size: 13.5px;
+    color: var(--text);
   }
-  .file-item .meta { color: #718096; font-size: 12px; margin-left: 8px; }
+  .file-item:last-child { border-bottom: none; }
+  .file-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 62%; }
+  .file-item .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-faint);
+    font-size: 11.5px;
+    margin-left: 10px;
+  }
   .file-item .remove {
-    color: #e53e3e;
+    color: var(--stamp);
     cursor: pointer;
-    font-weight: bold;
-    padding: 4px 10px;
-    border-radius: 4px;
-    user-select: none;
-  }
-  .file-item .remove:hover { background: #fff5f5; }
-  .file-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
-  .options { margin-top: 22px; padding: 18px; background: #f7fafc; border-radius: 10px; }
-  .option-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-  .option-row:last-child { margin-bottom: 0; }
-  .option-row label { font-size: 14px; color: #4a5568; font-weight: 500; min-width: 130px; }
-  .option-row input[type="number"], .option-row select {
-    padding: 8px 12px;
-    border: 1px solid #cbd5e0;
-    border-radius: 6px;
-    font-size: 14px;
-    background: white;
-    color: #2d3748;
-  }
-  .option-row input[type="number"] { width: 110px; }
-  .option-row input[type="range"] { width: 220px; accent-color: #5a67d8; }
-  .option-row .val { color: #5a67d8; font-weight: 600; min-width: 32px; }
-  .submit-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 14px 24px;
-    border-radius: 10px;
-    font-size: 15px;
     font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 15px;
+    line-height: 1;
+    user-select: none;
+    transition: background 0.12s;
+  }
+  .file-item .remove:hover { background: rgba(189,58,43,0.15); }
+
+  .options {
+    margin-top: 22px;
+    padding: 16px 18px;
+    background: var(--ink);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-sm);
+  }
+  .option-row {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 13px;
+    flex-wrap: wrap;
+  }
+  .option-row:last-child { margin-bottom: 0; }
+  .option-row label {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+    min-width: 140px;
+  }
+  .option-row input[type="number"], .option-row select {
+    padding: 8px 11px;
+    border: 1px solid var(--ink-line);
+    border-radius: 7px;
+    font-size: 13.5px;
+    background: var(--ink-soft);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .option-row input[type="number"] { width: 100px; }
+  .option-row select { font-family: 'IBM Plex Sans', sans-serif; }
+  .option-row select:focus, .option-row input:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
+  .option-row input[type="range"] {
+    width: 200px;
+    accent-color: var(--brass);
+  }
+  .option-row .val {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--brass);
+    font-weight: 600;
+    min-width: 30px;
+    font-size: 13px;
+  }
+
+  .submit-btn {
+    position: relative;
+    background: var(--stamp);
+    color: var(--paper);
+    border: none;
+    padding: 15px 24px;
+    border-radius: 10px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
     cursor: pointer;
     width: 100%;
-    margin-top: 18px;
-    transition: transform 0.1s, box-shadow 0.18s;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
-  }
-  .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(102, 126, 234, 0.45); }
-  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-  .status {
-    margin-top: 16px;
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    display: none;
-    word-break: break-all;
-  }
-  .status.show { display: block; }
-  .status.info { background: #ebf4ff; color: #2c5282; }
-  .status.error { background: #fff5f5; color: #c53030; }
-  .status.success { background: #f0fff4; color: #276749; }
-  .downloads-panel {
-    background: white;
-    border-radius: 14px;
     margin-top: 20px;
-    padding: 22px 26px;
-    box-shadow: 0 6px 24px rgba(255, 255, 255, 0.08);
+    transition: background 0.15s, transform 0.08s, box-shadow 0.15s;
+    box-shadow: 0 3px 0 var(--stamp-deep);
   }
-  .downloads-header {
+  .submit-btn:hover:not(:disabled) { background: #C7432F; }
+  .submit-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--stamp-deep); }
+  .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  .submit-btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+
+  .btn-spinner {
+    display: none;
+    width: 15px; height: 15px;
+    border: 2px solid rgba(241,233,216,0.35);
+    border-top-color: var(--paper);
+    border-radius: 50%;
+    margin: 0 auto;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .submit-btn.loading .btn-label { display: none; }
+  .submit-btn.loading .btn-spinner { display: block; }
+
+  .status { margin-top: 18px; }
+  .status:empty { margin-top: 0; }
+
+  .alert {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #edf2f7;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 9px;
+    font-size: 13.5px;
+    border-left: 3px solid var(--ink-line);
+    background: var(--ink);
+    word-break: break-word;
   }
-  .downloads-header h2 {
-    font-size: 18px;
-    color: #2d3748;
-    font-weight: 700;
+  .alert-info { border-left-color: var(--brass); color: var(--text-muted); }
+  .alert-error { border-left-color: var(--stamp); color: #E8B4AC; }
+  .alert-mark { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+
+  .ticket {
+    position: relative;
+    background: var(--paper);
+    border-radius: 8px;
+    margin: 4px 6px;
+    overflow: visible;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .ticket { animation: ticketIn 0.32s cubic-bezier(.2,.9,.3,1.2); }
+  }
+  @keyframes ticketIn { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  .ticket::before, .ticket::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    background: var(--ink-soft);
+    border-radius: 50%;
+    top: 58px;
+    transform: translateY(-50%);
+  }
+  .ticket::before { left: -9px; }
+  .ticket::after { right: -9px; }
+
+  .ticket-top {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    padding: 14px 18px 12px;
+    flex-wrap: wrap;
   }
-  .downloads-count {
-    background: #5a67d8;
-    color: white;
-    border-radius: 12px;
-    padding: 2px 10px;
-    font-size: 12px;
-    font-weight: 700;
+  .ticket-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 1px;
+    color: var(--text-faint);
+    background: rgba(36,30,19,0.06);
+    padding: 3px 7px;
+    border-radius: 4px;
   }
-  .clear-all-btn {
-    background: #fff5f5;
-    color: #c53030;
-    border: 1px solid #feb2b2;
-    padding: 6px 14px;
-    border-radius: 6px;
-    font-size: 13px;
+  .ticket-no {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--on-paper);
     font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
+    flex: 1;
   }
-  .clear-all-btn:hover { background: #c53030; color: white; }
-  .clear-all-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .downloads-empty {
-    text-align: center;
-    color: #a0aec0;
-    padding: 32px 20px;
-    font-size: 14px;
+  .ticket-ready {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--moss);
+    border: 1.5px solid var(--moss);
+    border-radius: 5px;
+    padding: 2px 8px;
+    transform: rotate(-4deg);
   }
-  .downloads-empty .icon { font-size: 38px; margin-bottom: 8px; opacity: 0.6; }
-  .download-item {
+  @media (prefers-reduced-motion: no-preference) {
+    .ticket-ready { animation: stamp 0.4s 0.1s cubic-bezier(.3,1.6,.6,1) backwards; }
+  }
+  @keyframes stamp { from { opacity: 0; transform: rotate(-4deg) scale(1.6); } to { opacity: 1; transform: rotate(-4deg) scale(1); } }
+
+  .ticket-perf {
+    height: 0;
+    border-top: 1.5px dashed var(--paper-dim);
+    margin: 0 16px;
+  }
+
+  .ticket-bottom {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    background: #f7fafc;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    transition: all 0.15s;
-    border-left: 4px solid #5a67d8;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 18px 16px;
+    flex-wrap: wrap;
   }
-  .download-item:hover { background: #edf2f7; }
-  .download-item .left { flex: 1; min-width: 0; }
-  .download-item .name {
-    font-size: 14px;
-    color: #2d3748;
+  .ticket-file { min-width: 0; }
+  .ticket-filename {
+    display: block;
+    font-family: 'Fraunces', serif;
     font-weight: 600;
+    font-size: 15.5px;
+    color: var(--on-paper);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 280px;
   }
-  .download-item .meta {
-    font-size: 12px;
-    color: #718096;
-    margin-top: 2px;
+  .ticket-meta {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--brass-soft);
+    margin-top: 3px;
   }
-  .download-item .badge {
-    display: inline-block;
-    padding: 1px 8px;
-    background: #e9d8fd;
-    color: #553c9a;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    margin-left: 6px;
-  }
-  .download-item .actions { display: flex; gap: 6px; flex-shrink: 0; margin-left: 12px; }
-  .dl-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 7px 14px;
-    border-radius: 6px;
+  .ticket-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--on-paper);
+    color: var(--paper);
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 7px;
     font-size: 13px;
     font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.1s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
   }
-  .dl-btn:hover { transform: translateY(-1px); }
-  .del-btn {
-    background: transparent;
-    color: #c53030;
-    border: 1px solid #fed7d7;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s;
+  .ticket-download:hover { background: #3A2F1C; }
+  .ticket-download svg { width: 14px; height: 14px; stroke: currentColor; }
+
+  footer {
+    margin-top: 30px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--ink-line);
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-faint);
+    font-size: 11.5px;
+    letter-spacing: 0.2px;
   }
-  .del-btn:hover { background: #fff5f5; border-color: #fc8181; }
-  footer { text-align: center; color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 24px; }
+
   @media (max-width: 600px) {
-    .tab { font-size: 12px; padding: 14px 4px; }
-    .panel { padding: 20px 16px; }
+    .tabs { grid-template-columns: repeat(3, 1fr); }
+    .panel { padding: 24px 18px 28px; }
     .option-row label { min-width: 100%; }
-    .download-item { flex-wrap: wrap; }
-    .download-item .actions { margin-left: 0; margin-top: 8px; width: 100%; justify-content: flex-end; }
+    .ticket-filename { max-width: 160px; }
+    .ticket-bottom { flex-direction: column; align-items: flex-start; }
+    .ticket-download { width: 100%; justify-content: center; }
   }
 </style>
 </head>
 <body>
+<div class="topline"></div>
 <div class="container">
+
   <header>
-    <h1>📄 PDF & Image Toolbox</h1>
-    <p>Merge · Compress · Convert — then grab your files from the Downloads panel below</p>
+    <div class="mark">
+      <svg viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="24" stroke="#C9A227" stroke-width="1.5"/>
+        <circle cx="26" cy="26" r="19" stroke="#423A2A" stroke-width="1"/>
+        <path d="M18 16h11l5 5v15a2 2 0 01-2 2H18a2 2 0 01-2-2V18a2 2 0 012-2z" fill="#F1E9D8"/>
+        <path d="M29 16v5h5" fill="none" stroke="#17140F" stroke-width="1.3"/>
+        <path d="M19.5 26h9M19.5 30h9M19.5 22h5" stroke="#17140F" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="head-text">
+      <h1>PDF &amp; Image Toolbox</h1>
+      <p>DROP YOUR FILES &middot; WE PROCESS THEM &middot; YOU CLAIM THE RESULT</p>
+    </div>
   </header>
-  <div class="tabs">
-    <button class="tab active" data-tab="merge">🔗 Merge</button>
-    <button class="tab" data-tab="compress">🗜️ Compress</button>
-    <button class="tab" data-tab="convert">🔄 Convert</button>
-    <button class="tab" data-tab="img2pdf">🖼️ Images → PDF</button>
-  </div>
+  <div class="rule"></div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="merge">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="11" height="11" rx="2"/><rect x="10" y="10" width="11" height="11" rx="2"/></svg>
+      Merge
+    </button>
+    <button class="tab" data-tab="compress">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v7M9 7l3 3 3-3"/><path d="M12 21v-7M9 17l3-3 3 3"/></svg>
+      Compress
+    </button>
+    <button class="tab" data-tab="convert">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3.5-3.5M20 17H7l3.5 3.5"/></svg>
+      Convert
+    </button>
+    <button class="tab" data-tab="img2pdf">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="13" height="13" rx="2"/><circle cx="7.3" cy="8.3" r="1.2"/><path d="M4 14l3.3-3.3 2.4 2.2 2.8-3.6L16 13"/><path d="M18 9v9a2 2 0 01-2 2H8"/></svg>
+      Images
+    </button>
+    <button class="tab" data-tab="pdf2word">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M8.5 13.5h2M8.5 16.5h2M8.5 19h4" stroke-linecap="round"/></svg>
+      PDF → Word
+    </button>
+  </nav>
 
   <div class="panel active" id="merge">
+    <div class="panel-head">
+      <h2>Merge into one PDF</h2>
+      <p>Combine PDFs and images into a single document, in the order you add them.</p>
+    </div>
     <div class="dropzone" data-input="mergeFiles">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
       <div class="title">Drop PDFs or images here, or click to select</div>
-      <div class="hint">Mix PDFs, PNG, JPG, WebP, BMP, TIFF — they'll be combined in order</div>
+      <div class="hint">PDF · PNG · JPG · WEBP · BMP · TIFF</div>
       <input type="file" id="mergeFiles" multiple>
     </div>
     <div class="file-list" id="mergeList"></div>
-    <button class="submit-btn" id="mergeBtn">Merge into PDF</button>
+    <button class="submit-btn" id="mergeBtn"><span class="btn-label">Merge into PDF</span><div class="btn-spinner"></div></button>
     <div class="status" id="mergeStatus"></div>
   </div>
 
   <div class="panel" id="compress">
+    <div class="panel-head">
+      <h2>Compress a file</h2>
+      <p>Shrink a PDF or image. Lower quality and dimension settings give smaller files.</p>
+    </div>
     <div class="dropzone" data-input="compressFile">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
       <div class="title">Drop a PDF or image to compress</div>
-      <div class="hint">PDF, PNG, JPG, JPEG, WebP, BMP, TIFF</div>
+      <div class="hint">PDF · PNG · JPG · JPEG · WEBP · BMP · TIFF</div>
       <input type="file" id="compressFile">
     </div>
     <div class="file-list" id="compressList"></div>
     <div class="options">
       <div class="option-row">
-        <label>Quality:</label>
+        <label>Quality</label>
         <input type="range" id="cmpQuality" min="10" max="95" value="60">
         <span class="val" id="cmpQualityVal">60</span>
       </div>
       <div class="option-row">
-        <label>Max dimension (px):</label>
+        <label>Max dimension (px)</label>
         <input type="number" id="cmpMaxDim" value="1600" min="0" max="8000">
       </div>
       <div class="option-row">
-        <label>PDF rasterize DPI:</label>
+        <label>PDF rasterize DPI</label>
         <input type="number" id="cmpDpi" value="120" min="72" max="300">
       </div>
       <div class="option-row">
-        <label>PDF compression:</label>
+        <label>PDF compression</label>
         <select id="cmpMode">
           <option value="auto">Auto (smart, recommended)</option>
           <option value="native">Native (keeps text, smaller savings)</option>
@@ -306,74 +529,80 @@
         </select>
       </div>
     </div>
-    <button class="submit-btn" id="compressBtn">Compress</button>
+    <button class="submit-btn" id="compressBtn"><span class="btn-label">Compress</span><div class="btn-spinner"></div></button>
     <div class="status" id="compressStatus"></div>
   </div>
 
   <div class="panel" id="convert">
+    <div class="panel-head">
+      <h2>Convert a file</h2>
+      <p>Switch between PDF and image formats. Multi-page PDFs come back as a ZIP.</p>
+    </div>
     <div class="dropzone" data-input="convertFile">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
       <div class="title">Drop a file to convert</div>
-      <div class="hint">PDF ↔ Image, Image ↔ Image (multi-page PDFs come back as a ZIP)</div>
+      <div class="hint">PDF ↔ Image, Image ↔ Image</div>
       <input type="file" id="convertFile">
     </div>
     <div class="file-list" id="convertList"></div>
     <div class="options">
       <div class="option-row">
-        <label>Output format:</label>
+        <label>Output format</label>
         <select id="convFormat">
-          <optgroup label="Document">
-            <option value="pdf">PDF</option>
-            <option value="docx">Word (DOCX)</option>
-          </optgroup>
-          <optgroup label="Image">
-            <option value="png">PNG</option>
-            <option value="jpg">JPEG</option>
-            <option value="webp">WebP</option>
-            <option value="bmp">BMP</option>
-            <option value="tiff">TIFF</option>
-          </optgroup>
+          <option value="pdf">PDF</option>
+          <option value="png">PNG</option>
+          <option value="jpg">JPEG</option>
+          <option value="webp">WebP</option>
+          <option value="bmp">BMP</option>
+          <option value="tiff">TIFF</option>
         </select>
       </div>
       <div class="option-row">
-        <label>Image quality:</label>
+        <label>Image quality</label>
         <input type="number" id="convQuality" value="85" min="10" max="100">
       </div>
       <div class="option-row">
-        <label>PDF→Image DPI:</label>
+        <label>PDF→Image DPI</label>
         <input type="number" id="convDpi" value="150" min="72" max="600">
       </div>
     </div>
-    <button class="submit-btn" id="convertBtn">Convert</button>
+    <button class="submit-btn" id="convertBtn"><span class="btn-label">Convert</span><div class="btn-spinner"></div></button>
     <div class="status" id="convertStatus"></div>
   </div>
 
   <div class="panel" id="img2pdf">
+    <div class="panel-head">
+      <h2>Images into one PDF</h2>
+      <p>Combine several images into a single PDF, in the order you add them.</p>
+    </div>
     <div class="dropzone" data-input="imgFiles">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       <div class="title">Drop images to combine into one PDF</div>
-      <div class="hint">PNG, JPG, JPEG, WebP, BMP, TIFF — order is preserved</div>
+      <div class="hint">PNG · JPG · JPEG · WEBP · BMP · TIFF</div>
       <input type="file" id="imgFiles" multiple accept="image/*">
     </div>
     <div class="file-list" id="imgList"></div>
-    <button class="submit-btn" id="imgBtn">Create PDF</button>
+    <button class="submit-btn" id="imgBtn"><span class="btn-label">Create PDF</span><div class="btn-spinner"></div></button>
     <div class="status" id="imgStatus"></div>
   </div>
 
-  <div class="downloads-panel">
-    <div class="downloads-header">
-      <h2>📥 Downloads <span class="downloads-count" id="dlCount">0</span></h2>
-      <button class="clear-all-btn" id="clearAllBtn" disabled>🗑 Clear All</button>
+  <div class="panel" id="pdf2word">
+    <div class="panel-head">
+      <h2>PDF to Word</h2>
+      <p>Turn a PDF into an editable .docx file, keeping text, layout and tables as close to the original as possible.</p>
     </div>
-    <div id="downloadsList">
-      <div class="downloads-empty">
-        <div class="icon">📂</div>
-        <div>Files you process will appear here. Click <b>Download</b> to save them to your computer.</div>
-      </div>
+    <div class="dropzone" data-input="pdf2wordFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M8.5 13.5h2M8.5 16.5h2M8.5 19h4"/></svg>
+      <div class="title">Drop a PDF here, or click to select</div>
+      <div class="hint">PDF only · output is a .docx file</div>
+      <input type="file" id="pdf2wordFile" accept=".pdf">
     </div>
+    <div class="file-list" id="pdf2wordList"></div>
+    <button class="submit-btn" id="pdf2wordBtn"><span class="btn-label">Convert to Word</span><div class="btn-spinner"></div></button>
+    <div class="status" id="pdf2wordStatus"></div>
   </div>
 
-  <footer>Built with Flask · pypdf · pypdfium2 · Pillow</footer>
+  <footer>Files are processed on the server and removed automatically after 1 hour &middot; Built with Flask &middot; pypdf &middot; pypdfium2 &middot; Pillow</footer>
 </div>
 
 <script>
@@ -386,7 +615,9 @@ document.querySelectorAll('.tab').forEach(t => {
   };
 });
 
-const state = { downloads: [] };
+const state = {};
+let ticketCounter = Math.floor(Math.random() * 800) + 100;
+function nextTicketNo() { ticketCounter += 1; return String(ticketCounter).padStart(4, '0'); }
 
 function fmtSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
@@ -394,28 +625,12 @@ function fmtSize(bytes) {
   return (bytes / 1024 / 1024).toFixed(2) + ' MB';
 }
 
-function timeAgo(ts) {
-  const s = Math.floor(Date.now() / 1000 - ts);
-  if (s < 60) return 'just now';
-  if (s < 3600) return Math.floor(s / 60) + 'm ago';
-  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
-  return Math.floor(s / 86400) + 'd ago';
-}
-
-function extBadge(name) {
-  const m = name.toLowerCase().match(/\.([a-z0-9]+)$/);
-  return m ? m[1].toUpperCase() : 'FILE';
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
 function setupDropzone(inputId, listId, multiple) {
   const zone = document.querySelector(`[data-input="${inputId}"]`);
   const input = document.getElementById(inputId);
   const list = document.getElementById(listId);
   state[listId] = [];
+
   zone.onclick = () => input.click();
   input.onchange = (e) => { addFiles(Array.from(e.target.files)); };
   zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('dragover'); };
@@ -425,6 +640,7 @@ function setupDropzone(inputId, listId, multiple) {
     zone.classList.remove('dragover');
     addFiles(Array.from(e.dataTransfer.files));
   };
+
   function addFiles(newFiles) {
     if (multiple) {
       state[listId] = state[listId].concat(newFiles);
@@ -433,9 +649,10 @@ function setupDropzone(inputId, listId, multiple) {
     }
     render();
   }
+
   function render() {
     list.innerHTML = state[listId].map((f, i) =>
-      `<div class="file-item"><span class="name">${escapeHtml(f.name)}<span class="meta">${fmtSize(f.size)}</span></span><span class="remove" data-i="${i}">✕</span></div>`
+      `<div class="file-item"><span class="name">${escapeHtml(f.name)}</span><span class="meta">${fmtSize(f.size)}</span><span class="remove" data-i="${i}">✕</span></div>`
     ).join('');
     list.querySelectorAll('.remove').forEach(el => {
       el.onclick = () => { state[listId].splice(parseInt(el.dataset.i), 1); render(); };
@@ -443,10 +660,15 @@ function setupDropzone(inputId, listId, multiple) {
   }
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 setupDropzone('mergeFiles', 'mergeList', true);
 setupDropzone('compressFile', 'compressList', false);
 setupDropzone('convertFile', 'convertList', false);
 setupDropzone('imgFiles', 'imgList', true);
+setupDropzone('pdf2wordFile', 'pdf2wordList', false);
 
 document.getElementById('cmpQuality').oninput = (e) => {
   document.getElementById('cmpQualityVal').textContent = e.target.value;
@@ -454,88 +676,62 @@ document.getElementById('cmpQuality').oninput = (e) => {
 
 function setStatus(id, text, kind) {
   const el = document.getElementById(id);
-  el.className = 'status show ' + kind;
-  el.textContent = text;
+  el.className = 'status show';
+  const mark = kind === 'error' ? '✕' : '⏳';
+  el.innerHTML = `<div class="alert alert-${kind}"><span class="alert-mark">${mark}</span><span>${escapeHtml(text)}</span></div>`;
+}
+
+function renderTicket(id, { filename, sub, url }) {
+  const el = document.getElementById(id);
+  el.className = 'status show';
+  el.innerHTML = `
+    <div class="ticket">
+      <div class="ticket-top">
+        <span class="ticket-label">CLAIM TICKET</span>
+        <span class="ticket-no">No. ${nextTicketNo()}</span>
+        <span class="ticket-ready">READY</span>
+      </div>
+      <div class="ticket-perf"></div>
+      <div class="ticket-bottom">
+        <div class="ticket-file">
+          <span class="ticket-filename">${escapeHtml(filename)}</span>
+          <span class="ticket-meta">${escapeHtml(sub)}</span>
+        </div>
+        <a class="ticket-download" href="${url}" download="${escapeHtml(filename)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+          Download
+        </a>
+      </div>
+    </div>`;
 }
 
 async function postForm(url, formData) {
   const r = await fetch(url, { method: 'POST', body: formData });
-  const data = await r.json().catch(() => ({}));
   if (!r.ok) {
-    throw new Error(data.error || `request failed (${r.status})`);
+    let msg = `request failed (${r.status})`;
+    try { const j = await r.json(); msg = j.error || msg; } catch {}
+    throw new Error(msg);
   }
-  return data;
+  return await r.blob();
 }
 
-function renderDownloads() {
-  const list = document.getElementById('downloadsList');
-  const count = document.getElementById('dlCount');
-  const clearBtn = document.getElementById('clearAllBtn');
-  count.textContent = state.downloads.length;
-  clearBtn.disabled = state.downloads.length === 0;
-  if (state.downloads.length === 0) {
-    list.innerHTML = `<div class="downloads-empty"><div class="icon">📂</div><div>Files you process will appear here. Click <b>Download</b> to save them to your computer.</div></div>`;
-    return;
-  }
-  list.innerHTML = state.downloads.map((d) => {
-    const pagesInfo = d.pages ? `<span class="badge">${d.pages} pages</span>` : '';
-    return `
-      <div class="download-item" data-id="${d.id}">
-        <div class="left">
-          <div class="name">${escapeHtml(d.filename)} <span class="badge">${extBadge(d.filename)}</span>${pagesInfo}</div>
-          <div class="meta">${fmtSize(d.size)} · ${timeAgo(d.created)}</div>
-        </div>
-        <div class="actions">
-          <button class="dl-btn" data-id="${d.id}">⬇ Download</button>
-          <button class="del-btn" data-id="${d.id}">✕</button>
-        </div>
-      </div>`;
-  }).join('');
-  list.querySelectorAll('.dl-btn').forEach(btn => {
-    btn.onclick = () => downloadItem(btn.dataset.id);
-  });
-  list.querySelectorAll('.del-btn').forEach(btn => {
-    btn.onclick = () => removeItem(btn.dataset.id);
-  });
-}
-
-function addDownload(result) {
-  state.downloads.unshift(result);
-  renderDownloads();
-}
-
-function downloadItem(id) {
-  const item = state.downloads.find(d => d.id === id);
-  if (!item) return;
+let currentBlobUrl = null;
+function downloadBlob(blob, name) {
+  if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+  currentBlobUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = `/download/${id}`;
-  a.download = item.filename;
+  a.href = currentBlobUrl;
+  a.download = name;
   document.body.appendChild(a);
   a.click();
-  setTimeout(() => a.remove(), 100);
+  a.remove();
+  return currentBlobUrl;
 }
-
-async function removeItem(id) {
-  state.downloads = state.downloads.filter(d => d.id !== id);
-  renderDownloads();
-  try {
-    await fetch(`/delete/${id}`, { method: 'POST' });
-  } catch (e) { /* silent */ }
-}
-
-async function clearAll() {
-  const ids = state.downloads.map(d => d.id);
-  state.downloads = [];
-  renderDownloads();
-  for (const id of ids) {
-    try { await fetch(`/delete/${id}`, { method: 'POST' }); } catch (e) {}
-  }
-}
-
-document.getElementById('clearAllBtn').onclick = clearAll;
 
 function setLoading(btnId, statusId, on) {
-  document.getElementById(btnId).disabled = on;
+  const btn = document.getElementById(btnId);
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
   if (on) setStatus(statusId, 'Working... this can take a moment for large files', 'info');
 }
 
@@ -546,12 +742,11 @@ document.getElementById('mergeBtn').onclick = async () => {
   files.forEach(f => fd.append('files', f));
   setLoading('mergeBtn', 'mergeStatus', true);
   try {
-    const data = await postForm('/merge', fd);
-    addDownload(data.result);
-    setStatus('mergeStatus', `✓ Done — "${data.result.filename}" added to Downloads below`, 'success');
-    document.getElementById('downloadsList').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const blob = await postForm('/merge', fd);
+    const url = downloadBlob(blob, 'merged.pdf');
+    renderTicket('mergeStatus', { filename: 'merged.pdf', sub: `${files.length} files combined · ${fmtSize(blob.size)}`, url });
   } catch (e) {
-    setStatus('mergeStatus', '✗ ' + e.message, 'error');
+    setStatus('mergeStatus', e.message, 'error');
   }
   setLoading('mergeBtn', 'mergeStatus', false);
 };
@@ -567,14 +762,17 @@ document.getElementById('compressBtn').onclick = async () => {
   fd.append('mode', document.getElementById('cmpMode').value);
   setLoading('compressBtn', 'compressStatus', true);
   try {
-    const data = await postForm('/compress', fd);
-    addDownload(data.result);
-    setStatus('compressStatus',
-      `✓ Done — "${data.result.filename}" added to Downloads (was ${fmtSize(files[0].size)}, now ${fmtSize(data.result.size)})`,
-      'success');
-    document.getElementById('downloadsList').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const blob = await postForm('/compress', fd);
+    const orig = files[0];
+    const base = orig.name.replace(/\.[^.]+$/, '');
+    const ext = orig.name.split('.').pop();
+    const name = `${base}_compressed.${ext}`;
+    const url = downloadBlob(blob, name);
+    const savings = ((1 - blob.size / orig.size) * 100).toFixed(1);
+    const sign = blob.size <= orig.size ? 'smaller' : 'larger';
+    renderTicket('compressStatus', { filename: name, sub: `${fmtSize(orig.size)} → ${fmtSize(blob.size)} · ${Math.abs(savings)}% ${sign}`, url });
   } catch (e) {
-    setStatus('compressStatus', '✗ ' + e.message, 'error');
+    setStatus('compressStatus', e.message, 'error');
   }
   setLoading('compressBtn', 'compressStatus', false);
 };
@@ -590,12 +788,14 @@ document.getElementById('convertBtn').onclick = async () => {
   fd.append('dpi', document.getElementById('convDpi').value);
   setLoading('convertBtn', 'convertStatus', true);
   try {
-    const data = await postForm('/convert', fd);
-    addDownload(data.result);
-    setStatus('convertStatus', `✓ Done — "${data.result.filename}" added to Downloads`, 'success');
-    document.getElementById('downloadsList').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const blob = await postForm('/convert', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const isPdfToImg = files[0].name.toLowerCase().endsWith('.pdf') && fmt !== 'pdf';
+    const name = isPdfToImg ? `${base}_pages.zip` : `${base}.${fmt}`;
+    const url = downloadBlob(blob, name);
+    renderTicket('convertStatus', { filename: name, sub: `Converted to ${fmt.toUpperCase()} · ${fmtSize(blob.size)}`, url });
   } catch (e) {
-    setStatus('convertStatus', '✗ ' + e.message, 'error');
+    setStatus('convertStatus', e.message, 'error');
   }
   setLoading('convertBtn', 'convertStatus', false);
 };
@@ -607,17 +807,32 @@ document.getElementById('imgBtn').onclick = async () => {
   files.forEach(f => fd.append('files', f));
   setLoading('imgBtn', 'imgStatus', true);
   try {
-    const data = await postForm('/images-to-pdf', fd);
-    addDownload(data.result);
-    setStatus('imgStatus', `✓ Done — "${data.result.filename}" added to Downloads`, 'success');
-    document.getElementById('downloadsList').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const blob = await postForm('/images-to-pdf', fd);
+    const url = downloadBlob(blob, 'images.pdf');
+    renderTicket('imgStatus', { filename: 'images.pdf', sub: `${files.length} images combined · ${fmtSize(blob.size)}`, url });
   } catch (e) {
-    setStatus('imgStatus', '✗ ' + e.message, 'error');
+    setStatus('imgStatus', e.message, 'error');
   }
   setLoading('imgBtn', 'imgStatus', false);
 };
 
-renderDownloads();
+document.getElementById('pdf2wordBtn').onclick = async () => {
+  const files = state.pdf2wordList;
+  if (files.length !== 1) { setStatus('pdf2wordStatus', 'Select a PDF file', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', files[0]);
+  setLoading('pdf2wordBtn', 'pdf2wordStatus', true);
+  try {
+    const blob = await postForm('/pdf-to-word', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const name = `${base}.docx`;
+    const url = downloadBlob(blob, name);
+    renderTicket('pdf2wordStatus', { filename: name, sub: `Converted to DOCX · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('pdf2wordStatus', e.message, 'error');
+  }
+  setLoading('pdf2wordBtn', 'pdf2wordStatus', false);
+};
 </script>
 </body>
 </html>
