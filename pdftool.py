@@ -8,20 +8,9 @@ from pathlib import Path
 from PIL import Image
 from pypdf import PdfReader, PdfWriter
 import pypdfium2 as pdfium
-from pdf2docx import Converter as _PdfDocxConverter
-from docx import Document as _DocxDocument
-from docx.shared import Pt as _Pt
-import openpyxl
-from reportlab.lib.pagesizes import A4 as _A4, LETTER as _LETTER
-from reportlab.lib.styles import getSampleStyleSheet as _getSampleStyleSheet
-from reportlab.lib.units import cm as _cm
-from reportlab.platypus import SimpleDocTemplate as _SimpleDocTemplate, Paragraph as _Paragraph, Spacer as _Spacer, Table as _RLTable, TableStyle as _TableStyle, PageBreak as _PageBreak
-from reportlab.lib import colors as _rl_colors
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif", ".gif"}
 PDF_EXTENSIONS = {".pdf"}
-DOCX_EXTENSIONS = {".docx", ".doc"}
-XLSX_EXTENSIONS = {".xlsx", ".xls"}
 
 
 def _to_rgb(img):
@@ -233,16 +222,23 @@ def convert_file(input_path, output_path, quality=85, dpi=150):
     if in_ext in IMAGE_EXTENSIONS and out_ext in IMAGE_EXTENSIONS:
         convert_image(input_path, output_path, quality=quality)
         return [output_path]
-    if in_ext == ".pdf" and out_ext in DOCX_EXTENSIONS:
-        pdf_to_docx(input_path, output_path)
-        return [output_path]
-    if in_ext in DOCX_EXTENSIONS and out_ext == ".pdf":
-        docx_to_pdf(input_path, output_path)
-        return [output_path]
-    if in_ext in XLSX_EXTENSIONS and out_ext == ".pdf":
-        xlsx_to_pdf(input_path, output_path)
-        return [output_path]
     raise ValueError(f"unsupported conversion: {in_ext} -> {out_ext}")
+
+
+def pdf_to_word(input_path, output_path):
+    from pdf2docx import Converter
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported")
+    cv = Converter(input_path)
+    try:
+        cv.convert(output_path)
+    finally:
+        cv.close()
+    return output_path
 
 
 def make_zip(paths_or_dir, zip_path):
@@ -280,6 +276,9 @@ def build_parser():
     convert_parser.add_argument("-o", "--output", required=True)
     convert_parser.add_argument("-q", "--quality", type=int, default=85)
     convert_parser.add_argument("--dpi", type=int, default=150)
+    word_parser = subparsers.add_parser("pdf-to-word")
+    word_parser.add_argument("input")
+    word_parser.add_argument("-o", "--output", required=True)
     return parser
 
 
@@ -305,166 +304,9 @@ def main():
     elif args.command == "convert":
         paths = convert_file(args.input, args.output, quality=args.quality, dpi=args.dpi)
         print(f"converted {args.input} -> {len(paths)} output file(s)")
-
-
-def pdf_to_docx(input_path, output_path):
-    cv = _PdfDocxConverter(input_path)
-    try:
-        cv.convert(output_path)
-    finally:
-        cv.close()
-    return output_path
-
-
-def docx_to_pdf(input_path, output_path):
-    doc = _DocxDocument(input_path)
-    styles = _getSampleStyleSheet()
-    body_style = styles["BodyText"]
-    body_style.fontSize = 11
-    body_style.leading = 15
-    body_style.spaceAfter = 6
-    h_style = styles["Heading1"]
-    h_style.fontSize = 16
-    h_style.leading = 20
-    h_style.spaceAfter = 10
-    h2_style = styles["Heading2"]
-    h2_style.fontSize = 13
-    h2_style.leading = 17
-    h2_style.spaceAfter = 8
-    doc_pdf = _SimpleDocTemplate(
-        str(output_path),
-        pagesize=_A4,
-        leftMargin=2 * _cm,
-        rightMargin=2 * _cm,
-        topMargin=2 * _cm,
-        bottomMargin=2 * _cm,
-        title="Converted Document",
-    )
-    story = []
-    for para in doc.paragraphs:
-        text = para.text or ""
-        if not text.strip():
-            story.append(_Spacer(1, 0.2 * _cm))
-            continue
-        style_name = (para.style.name or "").lower() if para.style else ""
-        if "heading 1" in style_name or "title" in style_name:
-            story.append(_Paragraph(_xml_escape(text), h_style))
-        elif "heading" in style_name:
-            story.append(_Paragraph(_xml_escape(text), h2_style))
-        else:
-            bold = any(run.bold for run in para.runs if run.bold is not None)
-            italic = any(run.italic for run in para.runs if run.italic is not None)
-            inline_style = body_style
-            escaped = _xml_escape(text)
-            if bold and italic:
-                escaped = f"<b><i>{escaped}</i></b>"
-            elif bold:
-                escaped = f"<b>{escaped}</b>"
-            elif italic:
-                escaped = f"<i>{escaped}</i>"
-            story.append(_Paragraph(escaped, inline_style))
-    for table in doc.tables:
-        rows_data = []
-        for row in table.rows:
-            rows_data.append([_xml_escape(cell.text or "") for cell in row.cells])
-        if not rows_data:
-            continue
-        n_cols = max(len(r) for r in rows_data)
-        for r in rows_data:
-            while len(r) < n_cols:
-                r.append("")
-        try:
-            tbl = _RLTable(rows_data, repeatRows=1)
-            tbl.setStyle(_TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), _rl_colors.HexColor("#5a67d8")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), _rl_colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("GRID", (0, 0), (-1, -1), 0.5, _rl_colors.HexColor("#cbd5e0")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ]))
-            story.append(tbl)
-            story.append(_Spacer(1, 0.4 * _cm))
-        except Exception:
-            pass
-    if not story:
-        story.append(_Paragraph("(empty document)", body_style))
-    doc_pdf.build(story)
-    return output_path
-
-
-def xlsx_to_pdf(input_path, output_path):
-    wb = openpyxl.load_workbook(input_path, data_only=True)
-    doc_pdf = _SimpleDocTemplate(
-        str(output_path),
-        pagesize=_A4,
-        leftMargin=1.5 * _cm,
-        rightMargin=1.5 * _cm,
-        topMargin=1.5 * _cm,
-        bottomMargin=1.5 * _cm,
-        landscape=True,
-    )
-    styles = _getSampleStyleSheet()
-    title_style = styles["Title"]
-    title_style.fontSize = 16
-    story = []
-    for ws in wb.worksheets:
-        story.append(_Paragraph(_xml_escape(ws.title or "Sheet"), title_style))
-        story.append(_Spacer(1, 0.3 * _cm))
-        rows_data = []
-        max_col = 0
-        for row in ws.iter_rows(values_only=True):
-            cells = ["" if v is None else str(v) for v in row]
-            if not any(c.strip() for c in cells):
-                continue
-            rows_data.append([_xml_escape(c) for c in cells])
-            if len(cells) > max_col:
-                max_col = len(cells)
-        if not rows_data:
-            story.append(_Paragraph("(empty sheet)", styles["Italic"]))
-            story.append(_PageBreak())
-            continue
-        if max_col == 0:
-            max_col = 1
-        col_widths = [_doc_pdf_available_width() / max_col] * max_col
-        try:
-            tbl = _RLTable(rows_data, colWidths=col_widths, repeatRows=1)
-            tbl.setStyle(_TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), _rl_colors.HexColor("#5a67d8")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), _rl_colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-                ("TOPPADDING", (0, 0), (-1, -1), 5),
-                ("GRID", (0, 0), (-1, -1), 0.4, _rl_colors.HexColor("#cbd5e0")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ]))
-            story.append(tbl)
-        except Exception:
-            pass
-        story.append(_PageBreak())
-    if not wb.worksheets:
-        story.append(_Paragraph("(workbook has no sheets)", styles["BodyText"]))
-    doc_pdf.build(story)
-    return output_path
-
-
-_doc_pdf_page_size = _A4
-_doc_pdf_page_w, _doc_pdf_page_h = _A4
-
-
-def _doc_pdf_available_width():
-    return _doc_pdf_page_w - 3 * _cm
-
-
-def _xml_escape(s):
-    return (s.replace("&", "&amp;")
-             .replace("<", "&lt;")
-             .replace(">", "&gt;")
-             .replace('"', "&quot;")
-             .replace("'", "&#39;"))
+    elif args.command == "pdf-to-word":
+        pdf_to_word(args.input, args.output)
+        print(f"converted {args.input} -> {args.output}")
 
 
 if __name__ == "__main__":
