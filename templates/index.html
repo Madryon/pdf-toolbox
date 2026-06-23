@@ -481,6 +481,7 @@
   }
 </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 <div class="topline"></div>
@@ -531,6 +532,10 @@
     <button class="tab" data-tab="video">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
       Video
+    </button>
+    <button class="tab" data-tab="mp3">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      MP3
     </button>
   </nav>
 
@@ -714,6 +719,7 @@
       <input type="file" id="videoFile" accept="video/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.mpeg,.mpg,.3gp">
     </div>
     <div class="file-list" id="videoList"></div>
+    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 60 for best results. Leave empty for auto (all frames).</div>
 
     <div class="split-type-toggle">
       <button class="split-type-btn active" data-type="frames">Extract Frames (ZIP)</button>
@@ -770,6 +776,33 @@
 
     <button class="submit-btn" id="videoBtn"><span class="btn-label">Process Video</span><div class="btn-spinner"></div></button>
     <div class="status" id="videoStatus"></div>
+  </div>
+
+  <!-- MP3 PANEL -->
+  <div class="panel" id="mp3">
+    <div class="panel-head">
+      <h2>Video to MP3</h2>
+      <p>Extract audio from any video file and save it as an MP3.</p>
+    </div>
+    <div class="dropzone" data-input="mp3File">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <div class="title">Drop a video to extract audio</div>
+      <div class="hint">MP4 · AVI · MOV · MKV · WMV · WEBM · FLV · MPEG</div>
+      <input type="file" id="mp3File" accept="video/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.mpeg,.mpg,.3gp">
+    </div>
+    <div class="file-list" id="mp3List"></div>
+    <div class="options">
+      <div class="option-row">
+        <label>Bitrate</label>
+        <select id="mp3Bitrate">
+          <option value="128k">128 kbps (smaller)</option>
+          <option value="192k" selected>192 kbps (balanced)</option>
+          <option value="320k">320 kbps (best quality)</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit-btn" id="mp3Btn"><span class="btn-label">Extract MP3</span><div class="btn-spinner"></div></button>
+    <div class="status" id="mp3Status"></div>
   </div>
 
   <footer>Files are processed on the server and removed automatically after Complition</footer>
@@ -1099,6 +1132,29 @@ document.getElementById('videoBtn').onclick = async () => {
     setStatus('videoStatus', e.message, 'error');
   }
   setLoading('videoBtn', 'videoStatus', false);
+
+};
+
+// MP3 setup
+setupDropzone('mp3File', 'mp3List', false);
+
+document.getElementById('mp3Btn').onclick = async () => {
+  const files = state.mp3List;
+  if (files.length !== 1) { setStatus('mp3Status', 'Select a video file', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', files[0]);
+  fd.append('bitrate', document.getElementById('mp3Bitrate').value);
+  setLoading('mp3Btn', 'mp3Status', true);
+  try {
+    const blob = await postForm('/video-to-mp3', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const name = `${base}.mp3`;
+    const url = downloadBlob(blob, name);
+    renderTicket('mp3Status', { filename: name, sub: `Audio extracted · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('mp3Status', e.message, 'error');
+  }
+  setLoading('mp3Btn', 'mp3Status', false);
 };
 </script>
 </body>
