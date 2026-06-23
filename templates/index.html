@@ -3,27 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Epstein files</title>
+<title>PDF & Image Toolbox</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #F5F5F7;
-    --ink-soft: #FFFFFF;
-    --ink-raised: #F0F4FA;
-    --ink-line: rgba(0, 0, 0, 0.08);
-    --paper: #FFFFFF;
-    --paper-dim: rgba(0, 0, 0, 0.12);
-    --stamp: #1D1D1F;
-    --stamp-deep: #000000;
-    --brass: #007AFF;
-    --brass-soft: #86B3EB;
-    --moss: #34C759;
-    --text: #1D1D1F;
-    --text-muted: #515154;
-    --text-faint: #86868B;
-    --on-paper: #1D1D1F;
+    --ink: #FFFFFF;
+    --ink-soft: #F8F9FA;
+    --ink-raised: #F1F3F5;
+    --ink-line: #DEE2E6;
+    --paper: #F1F3F5;
+    --paper-dim: #E9ECEF;
+    --stamp: #BD3A2B;
+    --stamp-deep: #8F2A1F;
+    --brass: #C9A227;
+    --brass-soft: #8A7434;
+    --moss: #6E8C5C;
+    --text: #212529;
+    --text-muted: #6C757D;
+    --text-faint: #ADB5BD;
+    --on-paper: #212529;
     --radius: 16px;
     --radius-sm: 9px;
   }
@@ -35,10 +35,6 @@
   body {
     font-family: 'IBM Plex Sans', sans-serif;
     background: var(--ink);
-    background-image:
-      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(0, 122, 255, 0.05), transparent 60%),
-      repeating-radial-gradient(circle at 0 0, rgba(0,0,0,0.03) 0, transparent 1px, transparent 3px);
-    background-size: auto, 3px 3px;
     color: var(--text);
     min-height: 100vh;
     padding: 0 16px 64px;
@@ -48,7 +44,7 @@
 
   .topline {
     height: 3px;
-    background: linear-gradient(90deg, #111, #007AFF 50%, #111);
+    background: linear-gradient(90deg, var(--stamp), #495057 50%, var(--stamp));
     margin: 0 -16px;
   }
 
@@ -105,23 +101,23 @@
     border: 1px solid var(--ink-line);
     border-radius: var(--radius-sm);
     background: var(--ink-soft);
-    color: var(--text-muted);
+    color: var(--text-faint);
     cursor: pointer;
     font-family: 'IBM Plex Sans', sans-serif;
     font-size: 11.5px;
     font-weight: 600;
     letter-spacing: 0.3px;
-    transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.1s, box-shadow 0.15s;
+    transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.1s;
   }
   .tab svg { width: 19px; height: 19px; stroke: currentColor; transition: stroke 0.15s; }
-  .tab:hover { color: var(--text); border-color: var(--brass-soft); background: var(--ink-raised); }
+  .tab:hover { color: var(--text); border-color: var(--brass-soft); }
   .tab.active {
-    background: var(--brass);
-    color: #FFFFFF;
+    background: var(--ink-raised);
+    color: var(--paper);
     border-color: var(--brass);
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(201,162,39,0.18);
   }
-  .tab.active svg { stroke: #FFFFFF; }
+  .tab.active svg { stroke: var(--brass); }
 
   .panel {
     display: none;
@@ -129,7 +125,6 @@
     border: 1px solid var(--ink-line);
     border-radius: var(--radius);
     padding: 30px 26px 32px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
   }
   .panel.active { display: block; animation: rise 0.25s ease; }
 
@@ -150,16 +145,16 @@
   }
 
   .dropzone {
-    border: 1.5px dashed rgba(0, 0, 0, 0.15);
+    border: 1.5px dashed var(--ink-line);
     border-radius: var(--radius-sm);
     padding: 38px 18px;
     text-align: center;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
-    background: #FAFAFC;
+    background: var(--ink);
   }
   .dropzone:hover, .dropzone.dragover { border-color: var(--brass); background: var(--ink-raised); }
-  .dropzone:hover svg, .dropzone.dragover svg { stroke: var(--brass); }
+  .dropzone:hover svg, .dropzone.dragover svg { stroke: var(--stamp); }
   .dropzone svg { width: 30px; height: 30px; stroke: var(--text-faint); margin-bottom: 12px; transition: stroke 0.15s; }
   .dropzone .title { font-size: 14.5px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
   .dropzone .hint {
@@ -189,7 +184,7 @@
     margin-left: 10px;
   }
   .file-item .remove {
-    color: #FF3B30;
+    color: var(--stamp);
     cursor: pointer;
     font-weight: 600;
     padding: 2px 8px;
@@ -199,12 +194,12 @@
     user-select: none;
     transition: background 0.12s;
   }
-  .file-item .remove:hover { background: rgba(255,59,48,0.1); }
+  .file-item .remove:hover { background: rgba(189,58,43,0.15); }
 
   .options {
     margin-top: 22px;
     padding: 16px 18px;
-    background: #FAFAFC;
+    background: var(--ink);
     border: 1px solid var(--ink-line);
     border-radius: var(--radius-sm);
   }
@@ -230,7 +225,6 @@
     background: var(--ink-soft);
     color: var(--text);
     font-family: 'IBM Plex Mono', monospace;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
   }
   .option-row input[type="number"] { width: 100px; }
   .option-row select { font-family: 'IBM Plex Sans', sans-serif; }
@@ -250,7 +244,7 @@
   .submit-btn {
     position: relative;
     background: var(--stamp);
-    color: #ffffff;
+    color: var(--paper);
     border: none;
     padding: 15px 24px;
     border-radius: 10px;
@@ -263,18 +257,18 @@
     width: 100%;
     margin-top: 20px;
     transition: background 0.15s, transform 0.08s, box-shadow 0.15s;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 3px 0 var(--stamp-deep);
   }
-  .submit-btn:hover:not(:disabled) { background: var(--stamp-deep); }
-  .submit-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); }
+  .submit-btn:hover:not(:disabled) { background: #C7432F; }
+  .submit-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--stamp-deep); }
   .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
   .submit-btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
 
   .btn-spinner {
     display: none;
     width: 15px; height: 15px;
-    border: 2px solid rgba(255,255,255,0.35);
-    border-top-color: #FFFFFF;
+    border: 2px solid rgba(241,233,216,0.35);
+    border-top-color: var(--paper);
     border-radius: 50%;
     margin: 0 auto;
     animation: spin 0.7s linear infinite;
@@ -294,11 +288,11 @@
     border-radius: 9px;
     font-size: 13.5px;
     border-left: 3px solid var(--ink-line);
-    background: #FAFAFC;
+    background: var(--ink);
     word-break: break-word;
   }
   .alert-info { border-left-color: var(--brass); color: var(--text-muted); }
-  .alert-error { border-left-color: #FF3B30; color: #D70015; background: #FFF0F0; }
+  .alert-error { border-left-color: var(--stamp); color: #BD3A2B; }
   .alert-mark { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
 
   .ticket {
@@ -307,8 +301,6 @@
     border-radius: 8px;
     margin: 4px 6px;
     overflow: visible;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-    border: 1px solid var(--ink-line);
   }
   @media (prefers-reduced-motion: no-preference) {
     .ticket { animation: ticketIn 0.32s cubic-bezier(.2,.9,.3,1.2); }
@@ -323,10 +315,9 @@
     border-radius: 50%;
     top: 58px;
     transform: translateY(-50%);
-    border: 1px solid var(--ink-line);
   }
-  .ticket::before { left: -9px; border-right-color: transparent; border-top-color: transparent; transform: translateY(-50%) rotate(45deg); }
-  .ticket::after { right: -9px; border-left-color: transparent; border-bottom-color: transparent; transform: translateY(-50%) rotate(45deg); }
+  .ticket::before { left: -9px; }
+  .ticket::after { right: -9px; }
 
   .ticket-top {
     display: flex;
@@ -340,7 +331,7 @@
     font-size: 10.5px;
     letter-spacing: 1px;
     color: var(--text-faint);
-    background: rgba(0,0,0,0.04);
+    background: rgba(33,37,41,0.06);
     padding: 3px 7px;
     border-radius: 4px;
   }
@@ -397,15 +388,15 @@
     display: block;
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11.5px;
-    color: var(--text-muted);
+    color: var(--brass-soft);
     margin-top: 3px;
   }
   .ticket-download {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    background: #F0F4FA;
-    color: var(--brass);
+    background: var(--on-paper);
+    color: var(--paper);
     text-decoration: none;
     padding: 10px 16px;
     border-radius: 7px;
@@ -413,15 +404,63 @@
     font-weight: 600;
     white-space: nowrap;
     flex-shrink: 0;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s;
   }
-  .ticket-download:hover { background: var(--brass); color: #FFFFFF; }
+  .ticket-download:hover { background: #343A40; }
   .ticket-download svg { width: 14px; height: 14px; stroke: currentColor; }
+
+  .split-type-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .split-type-btn {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--ink-line);
+    border-radius: 7px;
+    background: var(--ink-soft);
+    color: var(--text-faint);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .split-type-btn:hover { color: var(--text); border-color: var(--brass-soft); }
+  .split-type-btn.active {
+    background: var(--ink-raised);
+    color: var(--text);
+    border-color: var(--brass);
+    box-shadow: inset 0 0 0 1px rgba(201,162,39,0.18);
+  }
+
+  .split-option { display: none; }
+  .split-option.active { display: block; }
+
+  .hint-text {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .option-row input[type="text"] {
+    padding: 8px 11px;
+    border: 1px solid var(--ink-line);
+    border-radius: 7px;
+    font-size: 13.5px;
+    background: var(--ink-soft);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    width: 240px;
+  }
+  .option-row input[type="text"]:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
 
   footer {
     margin-top: 30px;
     padding-top: 18px;
-    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+    border-top: 1px dashed var(--ink-line);
     text-align: center;
     font-family: 'IBM Plex Mono', monospace;
     color: var(--text-faint);
@@ -429,15 +468,19 @@
     letter-spacing: 0.2px;
   }
 
-  @media (max-width: 600px) {
-    .tabs { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 700px) {
+    .tabs { grid-template-columns: repeat(4, 1fr); }
+    .tab { font-size: 10.5px; padding: 12px 4px; }
+    .tab svg { width: 16px; height: 16px; }
     .panel { padding: 24px 18px 28px; }
     .option-row label { min-width: 100%; }
+    .option-row input[type="text"] { width: 100%; }
     .ticket-filename { max-width: 160px; }
     .ticket-bottom { flex-direction: column; align-items: flex-start; }
     .ticket-download { width: 100%; justify-content: center; }
   }
 </style>
+<base target="_blank">
 </head>
 <body>
 <div class="topline"></div>
@@ -446,11 +489,11 @@
   <header>
     <div class="mark">
       <svg viewBox="0 0 52 52" fill="none">
-        <circle cx="26" cy="26" r="24" stroke="#007AFF" stroke-width="1.5"/>
-        <circle cx="26" cy="26" r="19" stroke="#EAEAEA" stroke-width="1"/>
-        <path d="M18 16h11l5 5v15a2 2 0 01-2 2H18a2 2 0 01-2-2V18a2 2 0 012-2z" fill="#1D1D1F"/>
-        <path d="M29 16v5h5" fill="none" stroke="#FFFFFF" stroke-width="1.3"/>
-        <path d="M19.5 26h9M19.5 30h9M19.5 22h5" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="26" cy="26" r="24" stroke="#C9A227" stroke-width="1.5"/>
+        <circle cx="26" cy="26" r="19" stroke="#423A2A" stroke-width="1"/>
+        <path d="M18 16h11l5 5v15a2 2 0 01-2 2H18a2 2 0 01-2-2V18a2 2 0 012-2z" fill="#E9ECEF"/>
+        <path d="M29 16v5h5" fill="none" stroke="#212529" stroke-width="1.3"/>
+        <path d="M19.5 26h9M19.5 30h9M19.5 22h5" stroke="#212529" stroke-width="1.2" stroke-linecap="round"/>
       </svg>
     </div>
     <div class="head-text">
@@ -480,6 +523,14 @@
     <button class="tab" data-tab="pdf2word">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M8.5 13.5h2M8.5 16.5h2M8.5 19h4" stroke-linecap="round"/></svg>
       PDF → Word
+    </button>
+    <button class="tab" data-tab="split">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
+      Split
+    </button>
+    <button class="tab" data-tab="video">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
+      Video
     </button>
   </nav>
 
@@ -546,7 +597,7 @@
     <div class="dropzone" data-input="convertFile">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
       <div class="title">Drop a file to convert</div>
-      <div class="hint">PDF ↔ png,jpeg and many more</div>
+      <div class="hint">PDF ↔ Image, Image ↔ Image</div>
       <input type="file" id="convertFile">
     </div>
     <div class="file-list" id="convertList"></div>
@@ -568,7 +619,7 @@
       </div>
       <div class="option-row">
         <label>PDF→Image DPI</label>
-        <input type="number" id="convDpi" value="250" min="72" max="600">
+        <input type="number" id="convDpi" value="150" min="72" max="600">
       </div>
     </div>
     <button class="submit-btn" id="convertBtn"><span class="btn-label">Convert</span><div class="btn-spinner"></div></button>
@@ -595,7 +646,6 @@
     <div class="panel-head">
       <h2>PDF to Word</h2>
       <p>Turn a PDF into an editable .docx file, keeping text, layout and tables as close to the original as possible.</p>
-      <footer>docx to pdf can be done in Ms office </footer>
     </div>
     <div class="dropzone" data-input="pdf2wordFile">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M8.5 13.5h2M8.5 16.5h2M8.5 19h4"/></svg>
@@ -608,7 +658,121 @@
     <div class="status" id="pdf2wordStatus"></div>
   </div>
 
-  <footer>Files are processed on the server and removed automatically after completion </footer>
+  <!-- SPLIT PANEL -->
+  <div class="panel" id="split">
+    <div class="panel-head">
+      <h2>Split a PDF</h2>
+      <p>Extract specific pages or split into equal-sized chunks.</p>
+    </div>
+    <div class="dropzone" data-input="splitFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><line x1="12" y1="12" x2="12" y2="21" stroke-width="1.2"/></svg>
+      <div class="title">Drop a PDF to split</div>
+      <div class="hint">PDF only</div>
+      <input type="file" id="splitFile" accept=".pdf">
+    </div>
+    <div class="file-list" id="splitList"></div>
+
+    <div class="split-type-toggle">
+      <button class="split-type-btn active" data-type="pages">By Page Ranges</button>
+      <button class="split-type-btn" data-type="chunks">By Chunk Size</button>
+    </div>
+
+    <div class="split-option active" id="splitPages">
+      <div class="options">
+        <div class="option-row">
+          <label>Page ranges</label>
+          <input type="text" id="splitRanges" value="1-3,4-7,8-10" placeholder="e.g. 1-3,4-7,8-10">
+        </div>
+        <div class="hint-text">Format: 1-3,4-7,8-10 &nbsp;|&nbsp; 5,10,15 &nbsp;|&nbsp; 1-5,6-end</div>
+      </div>
+    </div>
+
+    <div class="split-option" id="splitChunks">
+      <div class="options">
+        <div class="option-row">
+          <label>Pages per chunk</label>
+          <input type="number" id="splitChunkSize" value="5" min="1" max="100">
+        </div>
+        <div class="hint-text">Splits the PDF into files of N pages each.</div>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="splitBtn"><span class="btn-label">Split PDF</span><div class="btn-spinner"></div></button>
+    <div class="status" id="splitStatus"></div>
+  </div>
+
+  <!-- VIDEO PANEL -->
+  <div class="panel" id="video">
+    <div class="panel-head">
+      <h2>Video to Images / PDF</h2>
+      <p>Extract frames from a video and save them as individual images or compile into a PDF.</p>
+    </div>
+    <div class="dropzone" data-input="videoFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
+      <div class="title">Drop a video file here</div>
+      <div class="hint">MP4 · AVI · MOV · MKV · WMV · WEBM · FLV · MPEG</div>
+      <input type="file" id="videoFile" accept="video/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.mpeg,.mpg,.3gp">
+    </div>
+    <div class="file-list" id="videoList"></div>
+
+    <div class="split-type-toggle">
+      <button class="split-type-btn active" data-type="frames">Extract Frames (ZIP)</button>
+      <button class="split-type-btn" data-type="pdf">Convert to PDF</button>
+    </div>
+
+    <div class="split-option active" id="videoFrames">
+      <div class="options">
+        <div class="option-row">
+          <label>Output format</label>
+          <select id="videoFrameFormat">
+            <option value="png">PNG</option>
+            <option value="jpg">JPEG</option>
+            <option value="webp">WebP</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <label>Quality</label>
+          <input type="range" id="videoFrameQuality" min="10" max="100" value="85">
+          <span class="val" id="videoFrameQualityVal">85</span>
+        </div>
+        <div class="option-row">
+          <label>Target FPS</label>
+          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60">
+        </div>
+        <div class="option-row">
+          <label>Max frames</label>
+          <input type="number" id="videoFrameMax" value="" placeholder="all" min="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="split-option" id="videoPdf">
+      <div class="options">
+        <div class="option-row">
+          <label>Frame quality</label>
+          <input type="range" id="videoPdfQuality" min="10" max="100" value="75">
+          <span class="val" id="videoPdfQualityVal">75</span>
+        </div>
+        <div class="option-row">
+          <label>Target FPS</label>
+          <input type="number" id="videoPdfFps" value="" placeholder="auto" min="1" max="60">
+        </div>
+        <div class="option-row">
+          <label>Max frames</label>
+          <input type="number" id="videoPdfMax" value="" placeholder="all" min="1">
+        </div>
+        <div class="option-row">
+          <label>Max dimension (px)</label>
+          <input type="number" id="videoPdfMaxDim" value="" placeholder="original" min="100" max="4000">
+        </div>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="videoBtn"><span class="btn-label">Process Video</span><div class="btn-spinner"></div></button>
+    <div class="status" id="videoStatus"></div>
+  </div>
+
+  <footer>Files are processed on the server and removed automatically after 1 hour &middot; Built with Flask &middot; pypdf &middot; pypdfium2 &middot; Pillow &middot; OpenCV</footer>
 </div>
 
 <script>
@@ -838,6 +1002,103 @@ document.getElementById('pdf2wordBtn').onclick = async () => {
     setStatus('pdf2wordStatus', e.message, 'error');
   }
   setLoading('pdf2wordBtn', 'pdf2wordStatus', false);
+};
+
+// Setup new dropzones
+setupDropzone('splitFile', 'splitList', false);
+setupDropzone('videoFile', 'videoList', false);
+
+// Split/Video type toggle
+document.querySelectorAll('.split-type-toggle').forEach(toggle => {
+  toggle.querySelectorAll('.split-type-btn').forEach(btn => {
+    btn.onclick = () => {
+      toggle.querySelectorAll('.split-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const type = btn.dataset.type;
+      const parent = toggle.closest('.panel');
+      parent.querySelectorAll('.split-option').forEach(opt => opt.classList.remove('active'));
+      const prefix = parent.id === 'split' ? 'split' : 'video';
+      const suffix = type === 'pages' ? 'Pages' : type === 'chunks' ? 'Chunks' : type === 'frames' ? 'Frames' : 'Pdf';
+      parent.querySelector(`#${prefix}${suffix}`).classList.add('active');
+    };
+  });
+});
+
+// Range slider listeners for video
+document.getElementById('videoFrameQuality').oninput = (e) => {
+  document.getElementById('videoFrameQualityVal').textContent = e.target.value;
+};
+document.getElementById('videoPdfQuality').oninput = (e) => {
+  document.getElementById('videoPdfQualityVal').textContent = e.target.value;
+};
+
+// Split button handler
+document.getElementById('splitBtn').onclick = async () => {
+  const files = state.splitList;
+  if (files.length !== 1) { setStatus('splitStatus', 'Select a PDF file', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', files[0]);
+
+  const isPages = document.querySelector('#split .split-type-btn.active').dataset.type === 'pages';
+  fd.append('split_type', isPages ? 'pages' : 'chunks');
+
+  if (isPages) {
+    fd.append('ranges', document.getElementById('splitRanges').value);
+  } else {
+    fd.append('pages_per_chunk', document.getElementById('splitChunkSize').value);
+  }
+
+  setLoading('splitBtn', 'splitStatus', true);
+  try {
+    const blob = await postForm('/split', fd);
+    const isZip = blob.type === 'application/zip';
+    const name = isZip ? `${files[0].name.replace(/\.pdf$/i, '')}_split.zip` : 'split.pdf';
+    const url = downloadBlob(blob, name);
+    renderTicket('splitStatus', { filename: name, sub: isZip ? 'Multiple PDFs in ZIP' : 'Single PDF split', url });
+  } catch (e) {
+    setStatus('splitStatus', e.message, 'error');
+  }
+  setLoading('splitBtn', 'splitStatus', false);
+};
+
+// Video button handler
+document.getElementById('videoBtn').onclick = async () => {
+  const files = state.videoList;
+  if (files.length !== 1) { setStatus('videoStatus', 'Select a video file', 'error'); return; }
+
+  const isFrames = document.querySelector('#video .split-type-btn.active').dataset.type === 'frames';
+  const fd = new FormData();
+  fd.append('file', files[0]);
+
+  if (isFrames) {
+    fd.append('format', document.getElementById('videoFrameFormat').value);
+    fd.append('quality', document.getElementById('videoFrameQuality').value);
+    const fps = document.getElementById('videoFrameFps').value;
+    if (fps) fd.append('fps', fps);
+    const max = document.getElementById('videoFrameMax').value;
+    if (max) fd.append('max_frames', max);
+  } else {
+    fd.append('quality', document.getElementById('videoPdfQuality').value);
+    const fps = document.getElementById('videoPdfFps').value;
+    if (fps) fd.append('fps', fps);
+    const max = document.getElementById('videoPdfMax').value;
+    if (max) fd.append('max_frames', max);
+    const dim = document.getElementById('videoPdfMaxDim').value;
+    if (dim) fd.append('max_dimension', dim);
+  }
+
+  setLoading('videoBtn', 'videoStatus', true);
+  try {
+    const blob = await postForm(isFrames ? '/video-to-images' : '/video-to-pdf', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const name = isFrames ? `${base}_frames.zip` : `${base}_video.pdf`;
+    const url = downloadBlob(blob, name);
+    const sub = isFrames ? 'Frames extracted as ZIP' : 'Video converted to PDF';
+    renderTicket('videoStatus', { filename: name, sub: `${sub} · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('videoStatus', e.message, 'error');
+  }
+  setLoading('videoBtn', 'videoStatus', false);
 };
 </script>
 </body>
