@@ -405,6 +405,43 @@ def video_to_pdf_route():
         return jsonify({"error": str(e)}), 500
 
 
+
+# NEW: Video to MP3 route
+@app.route("/video-to-mp3", methods=["POST"])
+def video_to_mp3_route():
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "no file provided"}), 400
+
+    ext = Path(f.filename).suffix.lower()
+    if ext not in pdftool.VIDEO_EXTENSIONS:
+        return jsonify({"error": f"unsupported video format: {ext}"}), 400
+
+    try:
+        bitrate = request.form.get("bitrate", "192k").strip()
+        if not bitrate:
+            bitrate = "192k"
+    except Exception:
+        bitrate = "192k"
+
+    job_id = uuid.uuid4().hex
+    job_dir = UPLOAD_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    in_path = _save_upload(f, job_dir, f.filename)
+    out_name = f"{in_path.stem}.mp3"
+    out_path = OUTPUT_DIR / f"{job_id}_{out_name}"
+
+    try:
+        pdftool.video_to_mp3(str(in_path), str(out_path), bitrate=bitrate)
+        return send_file(
+            str(out_path), as_attachment=True,
+            download_name=out_name,
+            mimetype="audio/mpeg",
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.errorhandler(413)
 def too_large(_e):
     return jsonify({"error": "file too large (max 500MB)"}), 413
@@ -414,7 +451,7 @@ def too_large(_e):
 def not_found(_e):
     if request.path.startswith("/api/") or request.path in (
         "/merge", "/compress", "/convert", "/pdf-to-word", "/images-to-pdf",
-        "/split", "/video-to-images", "/video-to-pdf"
+        "/split", "/video-to-images", "/video-to-pdf", "/video-to-mp3"
     ):
         return jsonify({"error": "not found"}), 404
     return jsonify({"error": "not found"}), 404
