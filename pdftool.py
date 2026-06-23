@@ -445,6 +445,52 @@ def video_to_pdf(input_path, output_path, quality=75, max_frames=None, fps=None,
     return output_path
 
 
+
+
+def video_to_mp3(input_path, output_path, bitrate="192k"):
+    """
+    Extract audio from a video file and save as MP3.
+    Uses moviepy which auto-installs FFmpeg on first use.
+
+    Args:
+        input_path: path to video file (mp4, mkv, avi, etc.)
+        output_path: path for output MP3 file
+        bitrate: audio bitrate like "128k", "192k", "320k"
+    """
+    from moviepy.editor import VideoFileClip
+
+    video = VideoFileClip(input_path)
+    if video.audio is None:
+        raise ValueError("This video has no audio track")
+
+    video.audio.write_audiofile(output_path, codec='mp3', bitrate=bitrate)
+    video.close()
+    return output_path
+
+
+
+
+def video_to_mp3(input_path, output_path, bitrate="192k"):
+    """
+    Extract audio from a video file and save as MP3.
+    Uses moviepy which auto-installs FFmpeg on first use.
+
+    Args:
+        input_path: path to video file (mp4, mkv, avi, etc.)
+        output_path: path for output MP3 file
+        bitrate: audio bitrate like "128k", "192k", "320k"
+    """
+    from moviepy.editor import VideoFileClip
+
+    video = VideoFileClip(input_path)
+    if video.audio is None:
+        raise ValueError("This video has no audio track")
+
+    video.audio.write_audiofile(output_path, codec='mp3', bitrate=bitrate)
+    video.close()
+    return output_path
+
+
 def make_zip(paths_or_dir, zip_path):
     paths = []
     if isinstance(paths_or_dir, (list, tuple)):
