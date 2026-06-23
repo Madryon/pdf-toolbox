@@ -235,10 +235,7 @@ def images_to_pdf_route():
     )
 
 
-# ─────────────────────────────────────────────────────────────
-# NEW ROUTE: Split PDF
-# ─────────────────────────────────────────────────────────────
-
+# NEW: Split PDF route
 @app.route("/split", methods=["POST"])
 def split_route():
     f = request.files.get("file")
@@ -258,7 +255,6 @@ def split_route():
 
     try:
         if split_type == "pages":
-            # Parse page ranges like "1-3,4-7,8-10" or "1,3,5-10"
             ranges_str = request.form.get("ranges", "")
             if not ranges_str:
                 return jsonify({"error": "no page ranges provided"}), 400
@@ -295,7 +291,6 @@ def split_route():
         if not paths:
             return jsonify({"error": "no output files generated"}), 400
 
-        # If only one file, return it directly; otherwise zip them
         if len(paths) == 1:
             return send_file(
                 paths[0], as_attachment=True,
@@ -315,10 +310,7 @@ def split_route():
         return jsonify({"error": str(e)}), 500
 
 
-# ─────────────────────────────────────────────────────────────
-# NEW ROUTE: Video to Images / PDF
-# ─────────────────────────────────────────────────────────────
-
+# NEW: Video to Images route
 @app.route("/video-to-images", methods=["POST"])
 def video_to_images_route():
     f = request.files.get("file")
@@ -334,10 +326,10 @@ def video_to_images_route():
         if fmt not in ("png", "jpg", "jpeg", "webp"):
             fmt = "png"
         quality = max(1, min(100, int(request.form.get("quality", 85))))
-        target_fps = request.form.get("fps")
-        target_fps = float(target_fps) if target_fps else None
-        max_frames = request.form.get("max_frames")
-        max_frames = int(max_frames) if max_frames else None
+        target_fps_raw = request.form.get("fps", "").strip()
+        target_fps = float(target_fps_raw) if target_fps_raw and target_fps_raw != "auto" else None
+        max_frames_raw = request.form.get("max_frames", "").strip()
+        max_frames = int(max_frames_raw) if max_frames_raw else None
     except (TypeError, ValueError):
         return jsonify({"error": "invalid numeric option"}), 400
 
@@ -369,6 +361,7 @@ def video_to_images_route():
         return jsonify({"error": str(e)}), 500
 
 
+# NEW: Video to PDF route
 @app.route("/video-to-pdf", methods=["POST"])
 def video_to_pdf_route():
     f = request.files.get("file")
@@ -381,12 +374,12 @@ def video_to_pdf_route():
 
     try:
         quality = max(1, min(100, int(request.form.get("quality", 75))))
-        target_fps = request.form.get("fps")
-        target_fps = float(target_fps) if target_fps else None
-        max_frames = request.form.get("max_frames")
-        max_frames = int(max_frames) if max_frames else None
-        max_dim = int(request.form.get("max_dimension", 0))
-        max_dim = max_dim if max_dim > 0 else None
+        target_fps_raw = request.form.get("fps", "").strip()
+        target_fps = float(target_fps_raw) if target_fps_raw and target_fps_raw != "auto" else None
+        max_frames_raw = request.form.get("max_frames", "").strip()
+        max_frames = int(max_frames_raw) if max_frames_raw else None
+        max_dim_raw = request.form.get("max_dimension", "").strip()
+        max_dim = int(max_dim_raw) if max_dim_raw else None
     except (TypeError, ValueError):
         return jsonify({"error": "invalid numeric option"}), 400
 
