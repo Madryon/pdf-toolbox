@@ -451,13 +451,19 @@ def video_to_mp3(input_path, output_path, bitrate="192k"):
     """
     Extract audio from a video file and save as MP3.
     Uses moviepy which auto-installs FFmpeg on first use.
+    Compatible with both moviepy v1 and v2.
 
     Args:
         input_path: path to video file (mp4, mkv, avi, etc.)
         output_path: path for output MP3 file
         bitrate: audio bitrate like "128k", "192k", "320k"
     """
-    from moviepy.editor import VideoFileClip
+    try:
+        # Try moviepy v2 style first
+        from moviepy import VideoFileClip
+    except ImportError:
+        # Fallback to moviepy v1 style
+        from moviepy.editor import VideoFileClip
 
     video = VideoFileClip(input_path)
     if video.audio is None:
@@ -474,13 +480,19 @@ def video_to_mp3(input_path, output_path, bitrate="192k"):
     """
     Extract audio from a video file and save as MP3.
     Uses moviepy which auto-installs FFmpeg on first use.
+    Compatible with both moviepy v1 and v2.
 
     Args:
         input_path: path to video file (mp4, mkv, avi, etc.)
         output_path: path for output MP3 file
         bitrate: audio bitrate like "128k", "192k", "320k"
     """
-    from moviepy.editor import VideoFileClip
+    try:
+        # Try moviepy v2 style first
+        from moviepy import VideoFileClip
+    except ImportError:
+        # Fallback to moviepy v1 style
+        from moviepy.editor import VideoFileClip
 
     video = VideoFileClip(input_path)
     if video.audio is None:
