@@ -537,6 +537,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
       MP3
     </button>
+    <button class="tab" data-tab="download">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      Download
+    </button>
   </nav>
 
   <div class="panel active" id="merge">
@@ -803,6 +807,94 @@
     </div>
     <button class="submit-btn" id="mp3Btn"><span class="btn-label">Extract MP3</span><div class="btn-spinner"></div></button>
     <div class="status" id="mp3Status"></div>
+  </div>
+
+  <!-- DOWNLOAD PANEL -->
+  <div class="panel" id="download">
+    <div class="panel-head">
+      <h2>Video Downloader</h2>
+      <p>Download videos from 1,700+ supported sites. Paste a link and get your file.</p>
+    </div>
+    <div class="options" style="margin-bottom:20px;">
+      <div class="option-row">
+        <label>Video URL</label>
+        <input type="text" id="downloadUrl" placeholder="Paste YouTube, Instagram, TikTok, Reddit, Twitter link..." style="flex:1; min-width:200px;">
+      </div>
+      <div class="option-row">
+        <label>Format</label>
+        <select id="downloadFormat">
+          <option value="mp4">MP4 Video</option>
+          <option value="mp3">MP3 Audio Only</option>
+        </select>
+      </div>
+      <div class="option-row" id="qualityRow">
+        <label>Quality</label>
+        <select id="downloadQuality">
+          <option value="best">Best Quality</option>
+          <option value="720">720p</option>
+          <option value="480">480p</option>
+          <option value="360">360p</option>
+          <option value="worst">Lowest (smallest)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SUPPORTED SITES SECTION -->
+    <div class="supported-sites" style="margin-bottom:20px; padding:16px 18px; background:var(--ink); border:1px solid var(--ink-line); border-radius:var(--radius-sm);">
+      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--moss)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Supported Sites (1,700+)
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:6px; font-size:11.5px; color:var(--text-muted); font-family:'IBM Plex Mono', monospace;">
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> YouTube</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> YouTube Shorts</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Instagram Reels</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Instagram Posts</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> TikTok</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Twitter / X</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Facebook</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Reddit</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Vimeo</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Dailymotion</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Twitch Clips</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> SoundCloud</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Spotify</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Bandcamp</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Pinterest</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> LinkedIn</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Snapchat</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Telegram</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> VKontakte</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Bilibili</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Weibo</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Rumble</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Odysee</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Streamable</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Gfycat</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Imgur</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Flickr</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Tumblr</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> 9GAG</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> BuzzFeed</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> CNN</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> BBC</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> ESPN</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> NBA</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> NFL</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> TED Talks</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Coursera</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Udemy</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Pornhub</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Xvideos</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> + 1,600 more</div>
+      </div>
+      <div style="margin-top:10px; font-size:11px; color:var(--text-faint); border-top:1px dashed var(--ink-line); padding-top:8px;">
+        ⚠️ <b>Note:</b> Private content, login-required videos, and geo-blocked content may not work. Only public URLs are supported.
+      </div>
+    </div>
+
+    <button class="submit-btn" id="downloadBtn"><span class="btn-label">Download</span><div class="btn-spinner"></div></button>
+    <div class="status" id="downloadStatus"></div>
   </div>
 
   <footer>Files are processed on the server and removed automatically after Complition</footer>
@@ -1132,7 +1224,6 @@ document.getElementById('videoBtn').onclick = async () => {
     setStatus('videoStatus', e.message, 'error');
   }
   setLoading('videoBtn', 'videoStatus', false);
-
 };
 
 // MP3 setup
@@ -1155,6 +1246,36 @@ document.getElementById('mp3Btn').onclick = async () => {
     setStatus('mp3Status', e.message, 'error');
   }
   setLoading('mp3Btn', 'mp3Status', false);
+};
+
+// Toggle quality select based on format
+document.getElementById('downloadFormat').onchange = (e) => {
+  const qualityRow = document.getElementById('qualityRow');
+  qualityRow.style.display = e.target.value === 'mp3' ? 'none' : 'flex';
+};
+
+// Download button handler
+document.getElementById('downloadBtn').onclick = async () => {
+  const url = document.getElementById('downloadUrl').value.trim();
+  if (!url) { setStatus('downloadStatus', 'Please enter a video URL', 'error'); return; }
+  if (!url.startsWith('http')) { setStatus('downloadStatus', 'Please enter a valid URL starting with http:// or https://', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('url', url);
+  fd.append('format', document.getElementById('downloadFormat').value);
+  fd.append('quality', document.getElementById('downloadQuality').value);
+
+  setLoading('downloadBtn', 'downloadStatus', true);
+  try {
+    const blob = await postForm('/download', fd);
+    const fmt = document.getElementById('downloadFormat').value;
+    const name = fmt === 'mp3' ? 'downloaded_audio.mp3' : 'downloaded_video.mp4';
+    const url = downloadBlob(blob, name);
+    renderTicket('downloadStatus', { filename: name, sub: `Downloaded · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('downloadStatus', e.message, 'error');
+  }
+  setLoading('downloadBtn', 'downloadStatus', false);
 };
 </script>
 </body>
