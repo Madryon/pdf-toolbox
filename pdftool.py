@@ -503,6 +503,86 @@ def video_to_mp3(input_path, output_path, bitrate="192k"):
     return output_path
 
 
+
+
+def download_video(url, output_path, format_type="mp4", quality="best"):
+    """
+    Download video from URL using yt-dlp.
+    Supports YouTube, Instagram Reels, TikTok, Twitter/X, Facebook, Reddit, and 1000+ sites.
+
+    Args:
+        url: video URL (YouTube, Instagram, TikTok, etc.)
+        output_path: path for output file
+        format_type: "mp4" or "mp3" (audio only)
+        quality: "best", "worst", or specific quality like "720"
+    """
+    import yt_dlp
+
+    # Common options for all downloads
+    common_opts = {
+        'outtmpl': output_path,
+        'quiet': True,
+        'no_warnings': True,
+        'ignoreerrors': False,
+        'geo_bypass': True,
+        'socket_timeout': 30,
+    }
+
+    # Determine format based on type
+    if format_type == "mp3":
+        ydl_opts = {
+            **common_opts,
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+        }
+    else:
+        # Video download
+        if quality == "best":
+            format_spec = 'best[ext=mp4]/best'
+        elif quality == "worst":
+            format_spec = 'worst[ext=mp4]/worst'
+        else:
+            format_spec = f'best[height<={quality}][ext=mp4]/best[height<={quality}]'
+
+        ydl_opts = {
+            **common_opts,
+            'format': format_spec,
+            'merge_output_format': 'mp4',
+        }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            if info:
+                # Get actual filename from info
+                if 'requested_downloads' in info and info['requested_downloads']:
+                    actual_path = info['requested_downloads'][0].get('filepath', output_path)
+                else:
+                    ext = 'mp3' if format_type == 'mp3' else 'mp4'
+                    actual_path = output_path.replace('.%(ext)s', f'.{ext}').replace('%(ext)s', ext)
+                return actual_path
+    except yt_dlp.utils.DownloadError as e:
+        error_msg = str(e).lower()
+        if 'private' in error_msg or 'login' in error_msg or 'cookie' in error_msg:
+            raise ValueError("This content is private or requires login. Please use a public URL.")
+        elif 'unsupported' in error_msg or 'no video' in error_msg:
+            raise ValueError("Unsupported URL or no video found at this link.")
+        elif 'age' in error_msg or 'restricted' in error_msg:
+            raise ValueError("This content is age-restricted.")
+        elif 'geo' in error_msg or 'region' in error_msg:
+            raise ValueError("This content is geo-blocked in your region.")
+        else:
+            raise ValueError(f"Download failed: {str(e)}")
+    except Exception as e:
+        raise ValueError(f"Download error: {str(e)}")
+
+    return output_path
+
+
 def make_zip(paths_or_dir, zip_path):
     paths = []
     if isinstance(paths_or_dir, (list, tuple)):
