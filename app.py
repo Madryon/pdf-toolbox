@@ -12,7 +12,10 @@ OUTPUT_DIR = BASE_DIR / "outputs"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-app = Flask(__name__, template_folder=str(BASE_DIR / "templates"))
+# Ensure template folder exists and is absolute
+TEMPLATE_DIR = BASE_DIR / "templates"
+TEMPLATE_DIR.mkdir(parents=True, exist_ok=True)
+app = Flask(__name__, template_folder=str(TEMPLATE_DIR))
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024
 app.config["JSON_SORT_KEYS"] = False
 
@@ -442,6 +445,71 @@ def video_to_mp3_route():
         return jsonify({"error": str(e)}), 500
 
 
+
+# NEW: Video Downloader route (YouTube, Instagram, TikTok, etc.)
+@app.route("/download", methods=["POST"])
+def download_route():
+    url = request.form.get("url", "").strip()
+    if not url:
+        return jsonify({"error": "no URL provided"}), 400
+
+    # Validate URL format
+    if not url.startswith(("http://", "https://")):
+        return jsonify({"error": "invalid URL format"}), 400
+
+    try:
+        format_type = request.form.get("format", "mp4").lower()
+        if format_type not in ("mp4", "mp3"):
+            format_type = "mp4"
+        quality = request.form.get("quality", "best").lower()
+    except Exception:
+        format_type = "mp4"
+        quality = "best"
+
+    job_id = uuid.uuid4().hex
+    job_dir = UPLOAD_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+
+    out_name = f"download_{job_id}.%(ext)s"
+    out_path = str(OUTPUT_DIR / f"{job_id}_{out_name}")
+
+    try:
+        actual_path = pdftool.download_video(url, out_path, format_type=format_type, quality=quality)
+
+        # Find the actual downloaded file
+        downloaded_file = Path(actual_path)
+        if not downloaded_file.exists():
+            # Try to find by pattern
+            pattern = f"{job_id}_download_*"
+            files = list(OUTPUT_DIR.glob(pattern))
+            if not files:
+                return jsonify({"error": "download failed - file not found"}), 500
+            downloaded_file = files[0]
+
+        # Determine mimetype
+        ext = downloaded_file.suffix.lower()
+        if ext == ".mp3":
+            mimetype = "audio/mpeg"
+            download_name = f"audio_{job_id}.mp3"
+        else:
+            mimetype = "video/mp4"
+            download_name = f"video_{job_id}.mp4"
+
+        return send_file(
+            str(downloaded_file),
+            as_attachment=True,
+            download_name=download_name,
+            mimetype=mimetype,
+        )
+    except Exception as e:
+        error_msg = str(e)
+        if "Unsupported URL" in error_msg:
+            return jsonify({"error": "unsupported URL or site"}), 400
+        elif "Private" in error_msg or "login" in error_msg.lower():
+            return jsonify({"error": "this content requires login or is private"}), 400
+        return jsonify({"error": error_msg}), 500
+
+
 @app.errorhandler(413)
 def too_large(_e):
     return jsonify({"error": "file too large (max 500MB)"}), 413
@@ -451,7 +519,7 @@ def too_large(_e):
 def not_found(_e):
     if request.path.startswith("/api/") or request.path in (
         "/merge", "/compress", "/convert", "/pdf-to-word", "/images-to-pdf",
-        "/split", "/video-to-images", "/video-to-pdf", "/video-to-mp3"
+        "/split", "/video-to-images", "/video-to-pdf", "/video-to-mp3", "/download"
     ):
         return jsonify({"error": "not found"}), 404
     return jsonify({"error": "not found"}), 404
