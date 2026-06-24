@@ -447,139 +447,249 @@ def video_to_pdf(input_path, output_path, quality=75, max_frames=None, fps=None,
 
 
 
-def video_to_mp3(input_path, output_path, bitrate="192k"):
+def add_text_watermark(input_path, output_path, text="CONFIDENTIAL", font_size=60, opacity=0.3, color=(128,128,128), angle=45, spacing=200):
     """
-    Extract audio from a video file and save as MP3.
-    Uses moviepy which auto-installs FFmpeg on first use.
-    Compatible with both moviepy v1 and v2.
+    Add text watermark to every page of a PDF.
 
     Args:
-        input_path: path to video file (mp4, mkv, avi, etc.)
-        output_path: path for output MP3 file
-        bitrate: audio bitrate like "128k", "192k", "320k"
+        input_path: path to input PDF
+        output_path: path for output PDF
+        text: watermark text
+        font_size: font size in points
+        opacity: opacity 0.0-1.0
+        color: RGB tuple (r,g,b)
+        angle: rotation angle in degrees
+        spacing: spacing between watermarks
     """
-    try:
-        # Try moviepy v2 style first
-        from moviepy import VideoFileClip
-    except ImportError:
-        # Fallback to moviepy v1 style
-        from moviepy.editor import VideoFileClip
+    from pypdf import PdfReader, PdfWriter
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.units import inch
+    import io
 
-    video = VideoFileClip(input_path)
-    if video.audio is None:
-        raise ValueError("This video has no audio track")
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported - unlock first")
 
-    video.audio.write_audiofile(output_path, codec='mp3', bitrate=bitrate)
-    video.close()
+    writer = PdfWriter()
+
+    # Create watermark PDF page
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+    can.setFont("Helvetica-Bold", font_size)
+
+    r, g, b = color
+    can.setFillColorRGB(r/255, g/255, b/255, alpha=opacity)
+    can.setStrokeColorRGB(r/255, g/255, b/255, alpha=opacity)
+
+    # Draw text multiple times across page
+    page_width, page_height = letter
+    can.saveState()
+    can.translate(page_width/2, page_height/2)
+    can.rotate(angle)
+
+    # Draw text in grid pattern
+    for x in range(-int(page_width), int(page_width)+1, spacing):
+        for y in range(-int(page_height), int(page_height)+1, spacing):
+            can.drawString(x, y, text)
+
+    can.restoreState()
+    can.save()
+    packet.seek(0)
+
+    watermark_pdf = PdfReader(packet)
+    watermark_page = watermark_pdf.pages[0]
+
+    # Apply watermark to each page
+    for page in reader.pages:
+        page.merge_page(watermark_page, over=True)
+        writer.add_page(page)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
     return output_path
 
 
-
-
-def video_to_mp3(input_path, output_path, bitrate="192k"):
+def add_image_watermark(input_path, output_path, image_path, opacity=0.3, position="center", scale=0.3):
     """
-    Extract audio from a video file and save as MP3.
-    Uses moviepy which auto-installs FFmpeg on first use.
-    Compatible with both moviepy v1 and v2.
+    Add image watermark to every page of a PDF.
 
     Args:
-        input_path: path to video file (mp4, mkv, avi, etc.)
-        output_path: path for output MP3 file
-        bitrate: audio bitrate like "128k", "192k", "320k"
+        input_path: path to input PDF
+        output_path: path for output PDF
+        image_path: path to watermark image (PNG with transparency preferred)
+        opacity: opacity 0.0-1.0
+        position: "center", "top-left", "top-right", "bottom-left", "bottom-right", "tile"
+        scale: scale factor relative to page width
     """
-    try:
-        # Try moviepy v2 style first
-        from moviepy import VideoFileClip
-    except ImportError:
-        # Fallback to moviepy v1 style
-        from moviepy.editor import VideoFileClip
+    from pypdf import PdfReader, PdfWriter
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    from PIL import Image
+    import io
 
-    video = VideoFileClip(input_path)
-    if video.audio is None:
-        raise ValueError("This video has no audio track")
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported - unlock first")
 
-    video.audio.write_audiofile(output_path, codec='mp3', bitrate=bitrate)
-    video.close()
-    return output_path
+    writer = PdfWriter()
 
+    # Get image dimensions
+    img = Image.open(image_path)
+    img_w, img_h = img.size
 
+    # Create watermark PDF
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+    page_width, page_height = letter
 
+    # Calculate size
+    target_width = page_width * scale
+    target_height = (img_h / img_w) * target_width
 
-def download_video(url, output_path, format_type="mp4", quality="best"):
-    """
-    Download video from URL using yt-dlp.
-    Supports YouTube, Instagram Reels, TikTok, Twitter/X, Facebook, Reddit, and 1000+ sites.
-
-    Args:
-        url: video URL (YouTube, Instagram, TikTok, etc.)
-        output_path: path for output file
-        format_type: "mp4" or "mp3" (audio only)
-        quality: "best", "worst", or specific quality like "720"
-    """
-    import yt_dlp
-
-    # Common options for all downloads
-    common_opts = {
-        'outtmpl': output_path,
-        'quiet': True,
-        'no_warnings': True,
-        'ignoreerrors': False,
-        'geo_bypass': True,
-        'socket_timeout': 30,
-    }
-
-    # Determine format based on type
-    if format_type == "mp3":
-        ydl_opts = {
-            **common_opts,
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
+    # Position
+    if position == "center":
+        x = (page_width - target_width) / 2
+        y = (page_height - target_height) / 2
+    elif position == "top-left":
+        x, y = 20, page_height - target_height - 20
+    elif position == "top-right":
+        x, y = page_width - target_width - 20, page_height - target_height - 20
+    elif position == "bottom-left":
+        x, y = 20, 20
+    elif position == "bottom-right":
+        x, y = page_width - target_width - 20, 20
     else:
-        # Video download
-        if quality == "best":
-            format_spec = 'best[ext=mp4]/best'
-        elif quality == "worst":
-            format_spec = 'worst[ext=mp4]/worst'
-        else:
-            format_spec = f'best[height<={quality}][ext=mp4]/best[height<={quality}]'
+        x = (page_width - target_width) / 2
+        y = (page_height - target_height) / 2
 
-        ydl_opts = {
-            **common_opts,
-            'format': format_spec,
-            'merge_output_format': 'mp4',
-        }
+    can.setFillAlpha(opacity)
+    can.drawImage(image_path, x, y, width=target_width, height=target_height, mask="auto")
+    can.save()
+    packet.seek(0)
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            if info:
-                # Get actual filename from info
-                if 'requested_downloads' in info and info['requested_downloads']:
-                    actual_path = info['requested_downloads'][0].get('filepath', output_path)
-                else:
-                    ext = 'mp3' if format_type == 'mp3' else 'mp4'
-                    actual_path = output_path.replace('.%(ext)s', f'.{ext}').replace('%(ext)s', ext)
-                return actual_path
-    except yt_dlp.utils.DownloadError as e:
-        error_msg = str(e).lower()
-        if 'private' in error_msg or 'login' in error_msg or 'cookie' in error_msg:
-            raise ValueError("This content is private or requires login. Please use a public URL.")
-        elif 'unsupported' in error_msg or 'no video' in error_msg:
-            raise ValueError("Unsupported URL or no video found at this link.")
-        elif 'age' in error_msg or 'restricted' in error_msg:
-            raise ValueError("This content is age-restricted.")
-        elif 'geo' in error_msg or 'region' in error_msg:
-            raise ValueError("This content is geo-blocked in your region.")
-        else:
-            raise ValueError(f"Download failed: {str(e)}")
-    except Exception as e:
-        raise ValueError(f"Download error: {str(e)}")
+    watermark_pdf = PdfReader(packet)
+    watermark_page = watermark_pdf.pages[0]
 
+    for page in reader.pages:
+        page.merge_page(watermark_page, over=True)
+        writer.add_page(page)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+
+def lock_pdf(input_path, output_path, user_password="", owner_password="", 
+             allow_printing=True, allow_copying=True, allow_modifying=False, 
+             allow_annotating=False, allow_form_filling=False):
+    """
+    Encrypt and password-protect a PDF with security settings.
+
+    Args:
+        input_path: path to input PDF
+        output_path: path for output PDF
+        user_password: password required to open PDF (empty = no open password)
+        owner_password: password for permissions (if empty, uses user_password)
+        allow_printing: allow printing
+        allow_copying: allow copying text/images
+        allow_modifying: allow modifying content
+        allow_annotating: allow adding annotations
+        allow_form_filling: allow filling forms
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported - unlock first")
+
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+
+    # Build permissions
+    permissions = 0
+    if allow_printing:
+        permissions |= 1 << 2  # Print
+    if allow_modifying:
+        permissions |= 1 << 3  # Modify
+    if allow_copying:
+        permissions |= 1 << 4  # Copy
+    if allow_annotating:
+        permissions |= 1 << 5  # Annotate
+    if allow_form_filling:
+        permissions |= 1 << 8  # Fill forms
+
+    # Encrypt
+    owner = owner_password if owner_password else user_password
+    writer.encrypt(
+        user_password=user_password,
+        owner_password=owner,
+        use_128bit=True,
+        permissions=permissions
+    )
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+
+def unlock_pdf(input_path, output_path, password=""):
+    """
+    Remove password and encryption from a PDF.
+
+    Args:
+        input_path: path to encrypted PDF
+        output_path: path for output decrypted PDF
+        password: password to decrypt (try empty first)
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(input_path)
+
+    if not reader.is_encrypted:
+        # Not encrypted, just copy
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        with open(output_path, "wb") as f:
+            writer.write(f)
+        return output_path
+
+    # Try to decrypt
+    decrypted = False
+    if password:
+        try:
+            reader.decrypt(password)
+            decrypted = True
+        except Exception:
+            pass
+
+    if not decrypted:
+        try:
+            reader.decrypt("")
+            decrypted = True
+        except Exception:
+            pass
+
+    if not decrypted:
+        raise ValueError("Could not decrypt PDF - wrong password or unsupported encryption")
+
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
     return output_path
 
 
