@@ -712,6 +712,7 @@
 </style>
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 <div class="topline"></div>
@@ -1388,6 +1389,13 @@ setupDropzone('compressFile', 'compressList', false);
 setupDropzone('convertFile', 'convertList', false);
 setupDropzone('imgFiles', 'imgList', true);
 setupDropzone('pdf2wordFile', 'pdf2wordList', false);
+setupDropzone('splitFile', 'splitList', false);
+setupDropzone('videoFile', 'videoList', false);
+setupDropzone('mp3File', 'mp3List', false);
+setupDropzone('watermarkFile', 'watermarkList', false);
+setupDropzone('wmImageFile', 'wmImageList', false);
+setupDropzone('lockFile', 'lockList', false);
+setupDropzone('unlockFile', 'unlockList', false);
 
 document.getElementById('cmpQuality').oninput = (e) => {
   document.getElementById('cmpQualityVal').textContent = e.target.value;
