@@ -11,21 +11,74 @@
   :root {
     --ink: #FFFFFF;
     --ink-soft: #F8F9FA;
-    --ink-raised: #F1F3F5;
-    --ink-line: #DEE2E6;
+    --ink-raised: #EEF1F4;
+    --ink-line: #C9CDD3;
     --paper: #F1F3F5;
-    --paper-dim: #E9ECEF;
+    --paper-dim: #E5E8EC;
     --stamp: #BD3A2B;
     --stamp-deep: #8F2A1F;
     --brass: #C9A227;
     --brass-soft: #8A7434;
     --moss: #6E8C5C;
-    --text: #212529;
-    --text-muted: #6C757D;
-    --text-faint: #ADB5BD;
+    --text: #0D1117;
+    --text-muted: #4B5563;
+    --text-faint: #6B7280;
     --on-paper: #212529;
+    --accent-2: #C9A227;
+    --accent-3: #BD3A2B;
+    --switcher-bg: rgba(255,255,255,0.9);
+    --switcher-border: #C9CDD3;
+    --switcher-shadow: 0 6px 20px rgba(0,0,0,0.10);
     --radius: 16px;
     --radius-sm: 9px;
+  }
+
+  /* === DARK THEME === */
+  [data-theme="dark"] {
+    --ink: #0F1115;
+    --ink-soft: #181B22;
+    --ink-raised: #20242C;
+    --ink-line: #2D323D;
+    --paper: #23272F;
+    --paper-dim: #1A1D24;
+    --stamp: #E25544;
+    --stamp-deep: #B5392A;
+    --brass: #E0B84A;
+    --brass-soft: #9C8138;
+    --moss: #7BAE6B;
+    --text: #F1F3F5;
+    --text-muted: #B0B6BF;
+    --text-faint: #808892;
+    --on-paper: #0F1115;
+    --accent-2: #E0B84A;
+    --accent-3: #E25544;
+    --switcher-bg: rgba(24,27,34,0.92);
+    --switcher-border: #2D323D;
+    --switcher-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+
+  /* === BADDIE THEME (cool & funky) === */
+  [data-theme="baddie"] {
+    --ink: #0A0014;
+    --ink-soft: rgba(30, 5, 60, 0.55);
+    --ink-raised: rgba(50, 10, 90, 0.65);
+    --ink-line: rgba(255, 46, 147, 0.32);
+    --paper: #160029;
+    --paper-dim: #0F001F;
+    --stamp: #FF2E93;
+    --stamp-deep: #B81F69;
+    --brass: #00F0FF;
+    --brass-soft: #FF2E93;
+    --moss: #B026FF;
+    --text: #FFFFFF;
+    --text-muted: #E8DFFF;
+    --text-faint: #C0B0E8;
+    --on-paper: #FFFFFF;
+    --accent-2: #B026FF;
+    --accent-3: #00F0FF;
+    --switcher-bg: rgba(20, 0, 40, 0.7);
+    --switcher-border: rgba(255, 46, 147, 0.4);
+    --switcher-shadow: 0 6px 24px rgba(255, 46, 147, 0.35), 0 0 0 1px rgba(0,240,255,0.15);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,6 +91,22 @@
     color: var(--text);
     min-height: 100vh;
     padding: 0 16px 64px;
+    transition: background-color 0.4s ease, color 0.3s ease;
+  }
+
+  /* Baddie gets a moving gradient mesh background */
+  [data-theme="baddie"] body {
+    background:
+      radial-gradient(circle at 18% 12%, rgba(255,46,147,0.35), transparent 50%),
+      radial-gradient(circle at 82% 28%, rgba(0,240,255,0.28), transparent 55%),
+      radial-gradient(circle at 50% 92%, rgba(176,38,255,0.38), transparent 55%),
+      #0A0014;
+    background-attachment: fixed;
+    animation: baddieShift 14s ease-in-out infinite alternate;
+  }
+  @keyframes baddieShift {
+    0%   { background-position: 0% 0%, 0% 0%, 0% 0%, 0 0; }
+    100% { background-position: 8% 5%, -8% -5%, 5% -8%, 0 0; }
   }
 
   a { color: inherit; }
@@ -113,11 +182,17 @@
   .tab:hover { color: var(--text); border-color: var(--brass-soft); }
   .tab.active {
     background: var(--ink-raised);
-    color: var(--paper);
+    color: var(--text);
     border-color: var(--brass);
     box-shadow: inset 0 0 0 1px rgba(201,162,39,0.18);
   }
   .tab.active svg { stroke: var(--brass); }
+
+  /* Baddie: neon glow on active tab */
+  [data-theme="baddie"] .tab.active {
+    box-shadow: 0 0 22px rgba(255, 46, 147, 0.55), inset 0 0 0 1px rgba(0,240,255,0.4);
+  }
+  [data-theme="baddie"] .tab.active svg { stroke: var(--brass); }
 
   .panel {
     display: none;
@@ -125,8 +200,18 @@
     border: 1px solid var(--ink-line);
     border-radius: var(--radius);
     padding: 30px 26px 32px;
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   }
   .panel.active { display: block; animation: rise 0.25s ease; }
+
+  /* Baddie: glassmorphic panels */
+  [data-theme="baddie"] .panel {
+    background: rgba(20, 0, 40, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 46, 147, 0.28);
+    box-shadow: 0 8px 32px rgba(176, 38, 255, 0.18), 0 0 0 1px rgba(0,240,255,0.05);
+  }
 
   @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -244,7 +329,7 @@
   .submit-btn {
     position: relative;
     background: var(--stamp);
-    color: var(--paper);
+    color: #FFFFFF;
     border: none;
     padding: 15px 24px;
     border-radius: 10px;
@@ -261,6 +346,24 @@
   }
   .submit-btn:hover:not(:disabled) { background: #C7432F; }
   .submit-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--stamp-deep); }
+  /* Baddie: animated rainbow submit button */
+  [data-theme="baddie"] .submit-btn {
+    background: linear-gradient(90deg, #FF2E93, #B026FF, #00F0FF, #FF2E93);
+    background-size: 220% 100%;
+    color: #FFFFFF;
+    box-shadow: 0 3px 0 var(--stamp-deep), 0 0 26px rgba(255,46,147,0.45);
+    animation: baddieRainbow 5s linear infinite;
+    text-shadow: 0 0 8px rgba(0,0,0,0.4);
+  }
+  [data-theme="baddie"] .submit-btn:hover:not(:disabled) {
+    background: linear-gradient(90deg, #FF2E93, #B026FF, #00F0FF, #FF2E93);
+    background-size: 220% 100%;
+    box-shadow: 0 3px 0 var(--stamp-deep), 0 0 34px rgba(0,240,255,0.6);
+  }
+  @keyframes baddieRainbow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 220% 50%; }
+  }
   .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
   .submit-btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
 
@@ -318,6 +421,18 @@
   }
   .ticket::before { left: -9px; }
   .ticket::after { right: -9px; }
+  /* Baddie: ticket perforations match the glass */
+  [data-theme="baddie"] .ticket::before,
+  [data-theme="baddie"] .ticket::after {
+    background: rgba(20, 0, 40, 0.55);
+  }
+  /* Baddie: ticket itself becomes glass */
+  [data-theme="baddie"] .ticket {
+    background: rgba(30, 5, 60, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 46, 147, 0.3);
+  }
 
   .ticket-top {
     display: flex;
@@ -396,7 +511,7 @@
     align-items: center;
     gap: 7px;
     background: var(--on-paper);
-    color: var(--paper);
+    color: #FFFFFF;
     text-decoration: none;
     padding: 10px 16px;
     border-radius: 7px;
@@ -407,6 +522,14 @@
     transition: background 0.15s;
   }
   .ticket-download:hover { background: #343A40; }
+  [data-theme="dark"] .ticket-download:hover { background: #3A4150; }
+  [data-theme="baddie"] .ticket-download {
+    background: linear-gradient(135deg, #FF2E93, #B026FF);
+    box-shadow: 0 0 16px rgba(255,46,147,0.45);
+  }
+  [data-theme="baddie"] .ticket-download:hover {
+    background: linear-gradient(135deg, #FF2E93, #00F0FF);
+  }
   .ticket-download svg { width: 14px; height: 14px; stroke: currentColor; }
 
   .split-type-toggle {
@@ -433,6 +556,9 @@
     color: var(--text);
     border-color: var(--brass);
     box-shadow: inset 0 0 0 1px rgba(201,162,39,0.18);
+  }
+  [data-theme="baddie"] .split-type-btn.active {
+    box-shadow: 0 0 18px rgba(255, 46, 147, 0.5), inset 0 0 0 1px rgba(0,240,255,0.35);
   }
 
   .split-option { display: none; }
@@ -479,6 +605,110 @@
     .ticket-bottom { flex-direction: column; align-items: flex-start; }
     .ticket-download { width: 100%; justify-content: center; }
   }
+
+  /* =========================================================
+     THEME SWITCHER (3-position sliding pill: Light / Dark / Baddie)
+     ========================================================= */
+  .theme-switcher {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+    background: var(--switcher-bg);
+    border: 1px solid var(--switcher-border);
+    border-radius: 999px;
+    padding: 4px;
+    box-shadow: var(--switcher-shadow);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-family: 'IBM Plex Sans', sans-serif;
+    user-select: none;
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .theme-switcher .seg {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .theme-switcher .slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: calc(100% / 3);
+    background: var(--stamp);
+    border-radius: 999px;
+    transition: transform 0.35s cubic-bezier(.5,.1,.3,1.1), background 0.3s ease;
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  [data-theme="dark"] .theme-switcher .slider { background: #2D323D; }
+  [data-theme="baddie"] .theme-switcher .slider {
+    background: linear-gradient(135deg, #FF2E93, #B026FF, #00F0FF);
+    box-shadow: 0 0 16px rgba(255,46,147,0.6);
+  }
+  .theme-switcher button {
+    position: relative;
+    z-index: 2;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 8px 13px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.25s ease;
+    font-family: inherit;
+    min-width: 78px;
+    justify-content: center;
+  }
+  .theme-switcher button:hover { color: var(--text); }
+  .theme-switcher button.active { color: #FFFFFF; }
+  .theme-switcher button .ico { font-size: 13px; line-height: 1; }
+
+  /* Baddie: glowing title text */
+  [data-theme="baddie"] header h1 {
+    background: linear-gradient(90deg, #FF2E93, #B026FF, #00F0FF, #FF2E93);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: baddieRainbow 5s linear infinite;
+    filter: drop-shadow(0 0 12px rgba(255, 46, 147, 0.45));
+  }
+  [data-theme="baddie"] header p { color: var(--text-faint); letter-spacing: 0.4px; }
+  [data-theme="baddie"] .panel-head h2 { color: #FFFFFF; }
+  [data-theme="baddie"] .dropzone { background: rgba(20,0,40,0.4); border-color: rgba(255,46,147,0.35); }
+  [data-theme="baddie"] .options { background: rgba(20,0,40,0.4); border-color: rgba(255,46,147,0.2); }
+  [data-theme="baddie"] .supported-sites,
+  [data-theme="baddie"] .dropzone {
+    background: rgba(20,0,40,0.45);
+  }
+  [data-theme="baddie"] footer { color: var(--text-faint); }
+  [data-theme="baddie"] .ticket-label {
+    background: rgba(255,46,147,0.15);
+    color: #FF8FC8;
+  }
+  [data-theme="baddie"] .ticket-ready {
+    color: #00F0FF;
+    border-color: #00F0FF;
+    box-shadow: 0 0 12px rgba(0,240,255,0.4);
+  }
+  [data-theme="baddie"] .ticket-perf {
+    border-top-color: rgba(255,46,147,0.35);
+  }
+
+  @media (max-width: 520px) {
+    .theme-switcher { top: 10px; right: 10px; padding: 3px; }
+    .theme-switcher button { padding: 7px 9px; font-size: 11px; min-width: 38px; }
+    .theme-switcher button .lbl { display: none; }
+  }
 </style>
 <base target="_blank">
 <base target="_blank">
@@ -486,6 +716,16 @@
 <body>
 <div class="topline"></div>
 <div class="container">
+
+<!-- Theme switcher (Light / Dark / Baddie) -->
+<div class="theme-switcher" role="tablist" aria-label="Theme">
+  <div class="seg">
+    <div class="slider" id="themeSlider"></div>
+    <button type="button" data-theme="light"   title="Light theme"><span class="ico">☀️</span><span class="lbl">Light</span></button>
+    <button type="button" data-theme="dark"    title="Dark theme"><span class="ico">🌙</span><span class="lbl">Dark</span></button>
+    <button type="button" data-theme="baddie"  title="Baddie theme"><span class="ico">🔥</span><span class="lbl">Baddie</span></button>
+  </div>
+</div>
 
   <header>
     <div class="mark">
@@ -1279,6 +1519,34 @@ document.getElementById('downloadBtn').onclick = async () => {
   }
   setLoading('downloadBtn', 'downloadStatus', false);
 };
+
+/* =========================================================
+   THEME SWITCHER LOGIC
+   - Reads stored preference (localStorage)
+   - Slides the indicator to the active segment
+   - Updates <html data-theme="..."> which re-skins everything
+   ========================================================= */
+(function initThemeSwitcher() {
+  const root = document.documentElement;
+  const slider = document.getElementById('themeSlider');
+  const buttons = document.querySelectorAll('.theme-switcher button');
+  const ORDER = ['light', 'dark', 'baddie'];
+
+  function apply(theme) {
+    if (!ORDER.includes(theme)) theme = 'light';
+    root.setAttribute('data-theme', theme);
+    try { localStorage.setItem('pdf-toolbox-theme', theme); } catch (e) {}
+    const idx = ORDER.indexOf(theme);
+    slider.style.transform = `translateX(${idx * 100}%)`;
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+  }
+
+  buttons.forEach(b => { b.addEventListener('click', () => apply(b.dataset.theme)); });
+
+  let saved = 'light';
+  try { saved = localStorage.getItem('pdf-toolbox-theme') || 'light'; } catch (e) {}
+  apply(saved);
+})();
 </script>
 </body>
 </html>
