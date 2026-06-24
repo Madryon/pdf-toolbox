@@ -12,10 +12,7 @@ OUTPUT_DIR = BASE_DIR / "outputs"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Ensure template folder exists and is absolute
-TEMPLATE_DIR = BASE_DIR / "templates"
-TEMPLATE_DIR.mkdir(parents=True, exist_ok=True)
-app = Flask(__name__, template_folder=str(TEMPLATE_DIR))
+app = Flask(__name__, template_folder=str(BASE_DIR / "templates"))
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024
 app.config["JSON_SORT_KEYS"] = False
 
@@ -409,105 +406,181 @@ def video_to_pdf_route():
 
 
 
-# NEW: Video to MP3 route
-@app.route("/video-to-mp3", methods=["POST"])
-def video_to_mp3_route():
+# NEW: Watermark PDF - Text
+@app.route("/watermark-text", methods=["POST"])
+def watermark_text_route():
     f = request.files.get("file")
     if not f or not f.filename:
         return jsonify({"error": "no file provided"}), 400
-
-    ext = Path(f.filename).suffix.lower()
-    if ext not in pdftool.VIDEO_EXTENSIONS:
-        return jsonify({"error": f"unsupported video format: {ext}"}), 400
+    if Path(f.filename).suffix.lower() != ".pdf":
+        return jsonify({"error": "please upload a PDF file"}), 400
 
     try:
-        bitrate = request.form.get("bitrate", "192k").strip()
-        if not bitrate:
-            bitrate = "192k"
-    except Exception:
-        bitrate = "192k"
+        text = request.form.get("text", "CONFIDENTIAL").strip() or "CONFIDENTIAL"
+        font_size = max(10, min(200, int(request.form.get("font_size", 60))))
+        opacity = max(0.05, min(1.0, float(request.form.get("opacity", 0.3))))
+        angle = int(request.form.get("angle", 45))
+        spacing = max(50, int(request.form.get("spacing", 200)))
+        # Parse color
+        color_str = request.form.get("color", "128,128,128")
+        color = tuple(int(x.strip()) for x in color_str.split(",") if x.strip().isdigit())[:3]
+        if len(color) != 3:
+            color = (128, 128, 128)
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid numeric option"}), 400
 
     job_id = uuid.uuid4().hex
     job_dir = UPLOAD_DIR / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
     in_path = _save_upload(f, job_dir, f.filename)
-    out_name = f"{in_path.stem}.mp3"
+    out_name = f"{in_path.stem}_watermarked.pdf"
     out_path = OUTPUT_DIR / f"{job_id}_{out_name}"
 
     try:
-        pdftool.video_to_mp3(str(in_path), str(out_path), bitrate=bitrate)
-        return send_file(
-            str(out_path), as_attachment=True,
-            download_name=out_name,
-            mimetype="audio/mpeg",
+        pdftool.add_text_watermark(
+            str(in_path), str(out_path),
+            text=text, font_size=font_size,
+            opacity=opacity, color=color,
+            angle=angle, spacing=spacing
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    return send_file(
+        str(out_path), as_attachment=True,
+        download_name=out_name,
+        mimetype="application/pdf",
+    )
 
 
-# NEW: Video Downloader route (YouTube, Instagram, TikTok, etc.)
-@app.route("/download", methods=["POST"])
-def download_route():
-    url = request.form.get("url", "").strip()
-    if not url:
-        return jsonify({"error": "no URL provided"}), 400
-
-    # Validate URL format
-    if not url.startswith(("http://", "https://")):
-        return jsonify({"error": "invalid URL format"}), 400
+# NEW: Watermark PDF - Image
+@app.route("/watermark-image", methods=["POST"])
+def watermark_image_route():
+    f = request.files.get("file")
+    img = request.files.get("image")
+    if not f or not f.filename:
+        return jsonify({"error": "no PDF file provided"}), 400
+    if not img or not img.filename:
+        return jsonify({"error": "no watermark image provided"}), 400
+    if Path(f.filename).suffix.lower() != ".pdf":
+        return jsonify({"error": "please upload a PDF file"}), 400
 
     try:
-        format_type = request.form.get("format", "mp4").lower()
-        if format_type not in ("mp4", "mp3"):
-            format_type = "mp4"
-        quality = request.form.get("quality", "best").lower()
-    except Exception:
-        format_type = "mp4"
-        quality = "best"
+        opacity = max(0.05, min(1.0, float(request.form.get("opacity", 0.3))))
+        position = request.form.get("position", "center")
+        if position not in ("center", "top-left", "top-right", "bottom-left", "bottom-right"):
+            position = "center"
+        scale = max(0.05, min(1.0, float(request.form.get("scale", 0.3))))
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid numeric option"}), 400
 
     job_id = uuid.uuid4().hex
     job_dir = UPLOAD_DIR / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
-
-    out_name = f"download_{job_id}.%(ext)s"
-    out_path = str(OUTPUT_DIR / f"{job_id}_{out_name}")
+    in_path = _save_upload(f, job_dir, f.filename)
+    img_path = _save_upload(img, job_dir, img.filename)
+    out_name = f"{in_path.stem}_watermarked.pdf"
+    out_path = OUTPUT_DIR / f"{job_id}_{out_name}"
 
     try:
-        actual_path = pdftool.download_video(url, out_path, format_type=format_type, quality=quality)
-
-        # Find the actual downloaded file
-        downloaded_file = Path(actual_path)
-        if not downloaded_file.exists():
-            # Try to find by pattern
-            pattern = f"{job_id}_download_*"
-            files = list(OUTPUT_DIR.glob(pattern))
-            if not files:
-                return jsonify({"error": "download failed - file not found"}), 500
-            downloaded_file = files[0]
-
-        # Determine mimetype
-        ext = downloaded_file.suffix.lower()
-        if ext == ".mp3":
-            mimetype = "audio/mpeg"
-            download_name = f"audio_{job_id}.mp3"
-        else:
-            mimetype = "video/mp4"
-            download_name = f"video_{job_id}.mp4"
-
-        return send_file(
-            str(downloaded_file),
-            as_attachment=True,
-            download_name=download_name,
-            mimetype=mimetype,
+        pdftool.add_image_watermark(
+            str(in_path), str(out_path), str(img_path),
+            opacity=opacity, position=position, scale=scale
         )
     except Exception as e:
-        error_msg = str(e)
-        if "Unsupported URL" in error_msg:
-            return jsonify({"error": "unsupported URL or site"}), 400
-        elif "Private" in error_msg or "login" in error_msg.lower():
-            return jsonify({"error": "this content requires login or is private"}), 400
-        return jsonify({"error": error_msg}), 500
+        return jsonify({"error": str(e)}), 500
+
+    return send_file(
+        str(out_path), as_attachment=True,
+        download_name=out_name,
+        mimetype="application/pdf",
+    )
+
+
+# NEW: Lock/Encrypt PDF
+@app.route("/lock", methods=["POST"])
+def lock_route():
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "no file provided"}), 400
+    if Path(f.filename).suffix.lower() != ".pdf":
+        return jsonify({"error": "please upload a PDF file"}), 400
+
+    user_password = request.form.get("user_password", "")
+    owner_password = request.form.get("owner_password", "")
+
+    if not user_password and not owner_password:
+        return jsonify({"error": "please provide at least one password"}), 400
+
+    try:
+        allow_printing = request.form.get("allow_printing", "true").lower() == "true"
+        allow_copying = request.form.get("allow_copying", "true").lower() == "true"
+        allow_modifying = request.form.get("allow_modifying", "false").lower() == "true"
+        allow_annotating = request.form.get("allow_annotating", "false").lower() == "true"
+        allow_form_filling = request.form.get("allow_form_filling", "false").lower() == "true"
+    except Exception:
+        allow_printing = True
+        allow_copying = True
+        allow_modifying = False
+        allow_annotating = False
+        allow_form_filling = False
+
+    job_id = uuid.uuid4().hex
+    job_dir = UPLOAD_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    in_path = _save_upload(f, job_dir, f.filename)
+    out_name = f"{in_path.stem}_locked.pdf"
+    out_path = OUTPUT_DIR / f"{job_id}_{out_name}"
+
+    try:
+        pdftool.lock_pdf(
+            str(in_path), str(out_path),
+            user_password=user_password,
+            owner_password=owner_password,
+            allow_printing=allow_printing,
+            allow_copying=allow_copying,
+            allow_modifying=allow_modifying,
+            allow_annotating=allow_annotating,
+            allow_form_filling=allow_form_filling
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return send_file(
+        str(out_path), as_attachment=True,
+        download_name=out_name,
+        mimetype="application/pdf",
+    )
+
+
+# NEW: Unlock/Decrypt PDF
+@app.route("/unlock", methods=["POST"])
+def unlock_route():
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "no file provided"}), 400
+    if Path(f.filename).suffix.lower() != ".pdf":
+        return jsonify({"error": "please upload a PDF file"}), 400
+
+    password = request.form.get("password", "")
+
+    job_id = uuid.uuid4().hex
+    job_dir = UPLOAD_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    in_path = _save_upload(f, job_dir, f.filename)
+    out_name = f"{in_path.stem}_unlocked.pdf"
+    out_path = OUTPUT_DIR / f"{job_id}_{out_name}"
+
+    try:
+        pdftool.unlock_pdf(str(in_path), str(out_path), password=password)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return send_file(
+        str(out_path), as_attachment=True,
+        download_name=out_name,
+        mimetype="application/pdf",
+    )
 
 
 @app.errorhandler(413)
@@ -519,7 +592,7 @@ def too_large(_e):
 def not_found(_e):
     if request.path.startswith("/api/") or request.path in (
         "/merge", "/compress", "/convert", "/pdf-to-word", "/images-to-pdf",
-        "/split", "/video-to-images", "/video-to-pdf", "/video-to-mp3", "/download"
+        "/split", "/video-to-images", "/video-to-pdf", "/watermark-text", "/watermark-image", "/lock", "/unlock"
     ):
         return jsonify({"error": "not found"}), 404
     return jsonify({"error": "not found"}), 404
