@@ -816,3 +816,298 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ═════════════════════════════════════════════════════════════
+# PREMIUM DOCX SCANNER MODULE
+# Auto-detect, perspective correction, deskew, enhance, crop
+# ═════════════════════════════════════════════════════════════
+
+import cv2
+import numpy as np
+from PIL import ImageEnhance, ImageFilter
+
+
+def _order_points(pts):
+    """Order rectangle corners: top-left, top-right, bottom-right, bottom-left"""
+    rect = np.zeros((4, 2), dtype="float32")
+    s = pts.sum(axis=1)
+    rect[0] = pts[np.argmin(s)]
+    rect[2] = pts[np.argmax(s)]
+    diff = np.diff(pts, axis=1)
+    rect[1] = pts[np.argmin(diff)]
+    rect[3] = pts[np.argmax(diff)]
+    return rect
+
+
+def _four_point_transform(image, pts):
+    """Apply perspective transform to get top-down view"""
+    rect = _order_points(pts)
+    (tl, tr, br, bl) = rect
+    widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
+    widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+    maxWidth = max(int(widthA), int(widthB))
+    heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
+    heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
+    maxHeight = max(int(heightA), int(heightB))
+    dst = np.array([
+        [0, 0],
+        [maxWidth - 1, 0],
+        [maxWidth - 1, maxHeight - 1],
+        [0, maxHeight - 1]], dtype="float32")
+    M = cv2.getPerspectiveTransform(rect, dst)
+    warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+    return warped
+
+
+def detect_document(image_path):
+    """Detect document boundaries. Returns (success, warped_image, corners_list)"""
+    image = cv2.imread(image_path)
+    if image is None:
+        return False, None, None
+    orig = image.copy()
+    h, w = image.shape[:2]
+    ratio = 1.0
+    if max(h, w) > 1500:
+        ratio = 1500.0 / max(h, w)
+        image = cv2.resize(image, None, fx=ratio, fy=ratio)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    edged = cv2.Canny(gray, 75, 200)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    edged = cv2.dilate(edged, kernel, iterations=2)
+    edged = cv2.erode(edged, kernel, iterations=1)
+    contours, _ = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
+    doc_cnt = None
+    for c in contours:
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+        if len(approx) == 4:
+            doc_cnt = approx
+            break
+    if doc_cnt is None:
+        if contours:
+            peri = cv2.arcLength(contours[0], True)
+            approx = cv2.approxPolyDP(contours[0], 0.02 * peri, True)
+            if len(approx) >= 4:
+                doc_cnt = approx[:4]
+            else:
+                x, y, bw, bh = cv2.boundingRect(contours[0])
+                doc_cnt = np.array([[x, y], [x+bw, y], [x+bw, y+bh], [x, y+bh]])
+        else:
+            return False, orig, None
+    if ratio != 1.0:
+        doc_cnt = (doc_cnt / ratio).astype(np.float32)
+    pts = doc_cnt.reshape(4, 2)
+    warped = _four_point_transform(orig, pts)
+    return True, warped, pts.tolist()
+
+
+def _crop_borders(image, threshold=240):
+    """Auto-crop uniform borders from an image"""
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
+    coords = cv2.findNonZero(255 - thresh)
+    if coords is None:
+        return image
+    x, y, w, h = cv2.boundingRect(coords)
+    pad = 5
+    x = max(0, x - pad)
+    y = max(0, y - pad)
+    w = min(image.shape[1] - x, w + 2*pad)
+    h = min(image.shape[0] - y, h + 2*pad)
+    return image[y:y+h, x:x+w]
+
+
+def deskew_image(image_path, output_path=None):
+    """Auto-deskew by detecting text line angles"""
+    image = cv2.imread(image_path)
+    if image is None:
+        raise ValueError("Could not read image")
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (9, 9), 0)
+    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 5))
+    dilate = cv2.dilate(thresh, kernel, iterations=2)
+    contours, _ = cv2.findContours(dilate, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    angles = []
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area < 100:
+            continue
+        rect = cv2.minAreaRect(cnt)
+        angle = rect[-1]
+        if angle != 90.0 and angle != -0.0 and angle != 0.0:
+            angles.append(angle)
+    if not angles:
+        if output_path:
+            cv2.imwrite(output_path, image)
+            return output_path
+        return image
+    angles.sort()
+    angle = angles[len(angles) // 2]
+    if angle < -45:
+        angle = 90 + angle
+    angle = -angle
+    if abs(angle) < 0.5:
+        if output_path:
+            cv2.imwrite(output_path, image)
+            return output_path
+        return image
+    (h, w) = image.shape[:2]
+    center = (w // 2, h // 2)
+    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC,
+                              borderMode=cv2.BORDER_CONSTANT, borderValue=(255, 255, 255))
+    rotated = _crop_borders(rotated)
+    if output_path:
+        cv2.imwrite(output_path, rotated)
+        return output_path
+    return rotated
+
+
+def enhance_scan(image_path, output_path=None, mode="auto", brightness=0, contrast=0, sharpness=0):
+    """Enhance scanned document quality. Modes: auto, bw, gray, color, original"""
+    img = Image.open(image_path)
+    img.load()
+    if mode == "original":
+        if output_path:
+            img.save(output_path, quality=95)
+            return output_path
+        return img
+    if mode == "bw":
+        img = img.convert("L")
+        img_cv = cv2.cvtColor(np.array(img.convert("RGB")), cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+        _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        img = Image.fromarray(bw)
+    elif mode == "gray":
+        img = img.convert("L")
+    elif mode in ("auto", "color"):
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+    if brightness != 0:
+        enhancer = ImageEnhance.Brightness(img)
+        img = enhancer.enhance(1.0 + brightness / 100)
+    if contrast != 0:
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(1.0 + contrast / 100)
+    if sharpness != 0:
+        enhancer = ImageEnhance.Sharpness(img)
+        img = enhancer.enhance(1.0 + sharpness / 100)
+    if mode == "auto":
+        enhancer = ImageEnhance.Brightness(img)
+        img = enhancer.enhance(1.05)
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(1.15)
+        enhancer = ImageEnhance.Sharpness(img)
+        img = enhancer.enhance(1.3)
+        img = img.filter(ImageFilter.MedianFilter(size=3))
+    elif mode == "color":
+        enhancer = ImageEnhance.Color(img)
+        img = enhancer.enhance(1.1)
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(1.1)
+        enhancer = ImageEnhance.Sharpness(img)
+        img = enhancer.enhance(1.2)
+    if output_path:
+        fmt = Path(output_path).suffix.lstrip(".").upper() or "PNG"
+        if fmt in ("JPG", "JPEG"):
+            img = img.convert("RGB")
+            img.save(output_path, "JPEG", quality=95, optimize=True)
+        elif fmt == "PNG":
+            img.save(output_path, "PNG", optimize=True)
+        elif fmt == "WEBP":
+            img.save(output_path, "WEBP", quality=95)
+        else:
+            img.save(output_path)
+        return output_path
+    return img
+
+
+def crop_image(image_path, output_path, x, y, w, h):
+    """Crop image to specified rectangle"""
+    img = Image.open(image_path)
+    img.load()
+    cropped = img.crop((x, y, x + w, y + h))
+    cropped.save(output_path, quality=95)
+    return output_path
+
+
+def scan_document(image_path, output_path,
+                    auto_detect=True, auto_deskew=True,
+                    enhance_mode="auto",
+                    brightness=0, contrast=0, sharpness=0,
+                    crop_rect=None, quality=95):
+    """Full document scanning pipeline"""
+    working_path = image_path
+    temp_files = []
+    try:
+        if auto_detect:
+            success, warped, corners = detect_document(image_path)
+            if success:
+                temp_path = str(Path(output_path).with_suffix(".warped.jpg"))
+                cv2.imwrite(temp_path, warped)
+                working_path = temp_path
+                temp_files.append(temp_path)
+        if auto_deskew:
+            temp_path = str(Path(output_path).with_suffix(".deskewed.jpg"))
+            deskew_image(working_path, temp_path)
+            working_path = temp_path
+            temp_files.append(temp_path)
+        if crop_rect:
+            temp_path = str(Path(output_path).with_suffix(".cropped.jpg"))
+            crop_image(working_path, temp_path, *crop_rect)
+            working_path = temp_path
+            temp_files.append(temp_path)
+        enhance_scan(working_path, output_path, mode=enhance_mode,
+                     brightness=brightness, contrast=contrast, sharpness=sharpness)
+    finally:
+        for tf in temp_files:
+            if os.path.exists(tf):
+                try:
+                    os.remove(tf)
+                except:
+                    pass
+    return output_path
+
+
+def scan_preview(image_path, max_dim=1200):
+    """Generate preview and detect corners for UI"""
+    img = Image.open(image_path)
+    img.load()
+    img.thumbnail((max_dim, max_dim), Image.LANCZOS)
+    preview_path = str(Path(image_path).with_suffix(".preview.jpg"))
+    img.save(preview_path, "JPEG", quality=85)
+    success, _, corners = detect_document(image_path)
+    return preview_path, corners if success else None
+
+
+def batch_scan(image_paths, output_dir, output_format="pdf",
+               auto_detect=True, auto_deskew=True, enhance_mode="auto",
+               brightness=0, contrast=0, sharpness=0):
+    """Scan multiple images into PDF or ZIP"""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    processed = []
+    for i, path in enumerate(image_paths):
+        out_name = f"scanned_{i+1:03d}.jpg"
+        out_path = output_dir / out_name
+        scan_document(path, str(out_path),
+                     auto_detect=auto_detect, auto_deskew=auto_deskew,
+                     enhance_mode=enhance_mode,
+                     brightness=brightness, contrast=contrast, sharpness=sharpness)
+        processed.append(str(out_path))
+    if output_format == "pdf":
+        images = [Image.open(p).convert("RGB") for p in processed]
+        pdf_path = output_dir / "scanned_document.pdf"
+        images[0].save(str(pdf_path), "PDF", save_all=True,
+                      append_images=images[1:], resolution=300.0)
+        return str(pdf_path)
+    else:
+        zip_path = output_dir / "scanned_images.zip"
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+            for p in processed:
+                z.write(p, Path(p).name)
+        return str(zip_path)
