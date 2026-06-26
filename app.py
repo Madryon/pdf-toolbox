@@ -583,6 +583,200 @@ def unlock_route():
     )
 
 
+
+
+# ═════════════════════════════════════════════════════════════
+# NEW: Premium DOCX Scanner Routes
+# ═════════════════════════════════════════════════════════════
+
+@app.route("/scan-preview", methods=["POST"])
+def scan_preview_route():
+    """Generate preview with auto-detected document corners"""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "no file provided"}), 400
+
+    ext = Path(f.filename).suffix.lower()
+    if ext not in IMAGE_EXTENSIONS:
+        return jsonify({"error": "please upload an image file"}), 400
+
+    job_id = uuid.uuid4().hex
+    job_dir = UPLOAD_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    in_path = _save_upload(f, job_dir, f.filename)
+
+    try:
+        preview_path, corners = pdftool.scan_preview(str(in_path), max_dim=1200)
+        # Return preview as base64 data URL
+        import base64
+        with open(preview_path, "rb") as img_file:
+            img_data = base64.b64encode(img_file.read()).decode()
+
+        # Get original dimensions for coordinate mapping
+        from PIL import Image
+        with Image.open(in_path) as img:
+            orig_w, orig_h = img.size
+
+        return jsonify({
+            "preview": f"data:image/jpeg;base64,{img_data}",
+            "corners": corners,
+            "original_size": {"width": orig_w, "height": orig_h},
+            "job_id": job_id
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/scan", methods=["POST"])
+def scan_route():
+    """Process scanned document with quality controls"""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "no file provided"}), 400
+
+    ext = Path(f.filename).suffix.lower()
+    if ext not in IMAGE_EXTENSIONS:
+        return jsonify({"error": "please upload an image file"}), 400
+
+    # Parse options
+    try:
+        auto_detect = request.form.get("auto_detect", "true").lower() == "true"
+        auto_deskew = request.form.get("auto_deskew", "true").lower() == "true"
+        enhance_mode = request.form.get("enhance_mode", "auto")
+        if enhance_mode not in ("auto", "bw", "gray", "color", "original"):
+            enhance_mode = "auto"
+        brightness = max(-100, min(100, int(request.form.get("brightness", 0))))
+        contrast = max(-100, min(100, int(request.form.get("contrast", 0))))
+        sharpness = max(-100, min(100, int(request.form.get("sharpness", 0))))
+        output_format = request.form.get("output_format", "pdf")
+        if output_format not in ("pdf", "jpg", "png", "webp"):
+            output_format = "pdf"
+        quality = max(50, min(100, int(request.form.get("quality", 95))))
+
+        # Manual crop coordinates
+        crop_x = request.form.get("crop_x", "").strip()
+        crop_y = request.form.get("crop_y", "").strip()
+        crop_w = request.form.get("crop_w", "").strip()
+        crop_h = request.form.get("crop_h", "").strip()
+        crop_rect = None
+        if crop_x and crop_y and crop_w and crop_h:
+            crop_rect = (int(crop_x), int(crop_y), int(crop_w), int(crop_h))
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid numeric option"}), 400
+
+    job_id = uuid.uuid4().hex
+    job_dir = UPLOAD_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    in_path = _save_upload(f, job_dir, f.filename)
+
+    out_name = f"{in_path.stem}_scanned.{output_format}"
+    out_path = OUTPUT_DIR / f"{job_id}_{out_name}"
+
+    try:
+        if output_format == "pdf":
+            # Scan to temp JPG first, then convert to PDF
+            temp_jpg = str(out_path.with_suffix(".jpg"))
+            pdftool.scan_document(
+                str(in_path), temp_jpg,
+                auto_detect=auto_detect, auto_deskew=auto_deskew,
+                enhance_mode=enhance_mode,
+                brightness=brightness, contrast=contrast, sharpness=sharpness,
+                crop_rect=crop_rect, quality=quality
+            )
+            # Convert to PDF
+            from PIL import Image
+            img = Image.open(temp_jpg)
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            pdf_path = str(out_path.with_suffix(".pdf"))
+            img.save(pdf_path, "PDF", resolution=300.0)
+            if os.path.exists(temp_jpg):
+                os.remove(temp_jpg)
+            out_path = Path(pdf_path)
+        else:
+            pdftool.scan_document(
+                str(in_path), str(out_path),
+                auto_detect=auto_detect, auto_deskew=auto_deskew,
+                enhance_mode=enhance_mode,
+                brightness=brightness, contrast=contrast, sharpness=sharpness,
+                crop_rect=crop_rect, quality=quality
+            )
+
+        mime_types = {
+            "pdf": "application/pdf",
+            "jpg": "image/jpeg",
+            "png": "image/png",
+            "webp": "image/webp"
+        }
+
+        return send_file(
+            str(out_path),
+            as_attachment=True,
+            download_name=out_name,
+            mimetype=mime_types.get(output_format, "application/octet-stream"),
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/scan-batch", methods=["POST"])
+def scan_batch_route():
+    """Batch scan multiple images into PDF or ZIP"""
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "no files provided"}), 400
+
+    try:
+        auto_detect = request.form.get("auto_detect", "true").lower() == "true"
+        auto_deskew = request.form.get("auto_deskew", "true").lower() == "true"
+        enhance_mode = request.form.get("enhance_mode", "auto")
+        brightness = max(-100, min(100, int(request.form.get("brightness", 0))))
+        contrast = max(-100, min(100, int(request.form.get("contrast", 0))))
+        sharpness = max(-100, min(100, int(request.form.get("sharpness", 0))))
+        output_format = request.form.get("output_format", "pdf")
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid numeric option"}), 400
+
+    job_id = uuid.uuid4().hex
+    job_dir = UPLOAD_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+
+    inputs = []
+    for f in files:
+        if not f.filename:
+            continue
+        ext = Path(f.filename).suffix.lower()
+        if ext not in IMAGE_EXTENSIONS:
+            continue
+        fp = _save_upload(f, job_dir, f.filename)
+        inputs.append(str(fp))
+
+    if not inputs:
+        return jsonify({"error": "no valid image files"}), 400
+
+    out_dir = OUTPUT_DIR / f"scan_batch_{job_id}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        result_path = pdftool.batch_scan(
+            inputs, str(out_dir), output_format=output_format,
+            auto_detect=auto_detect, auto_deskew=auto_deskew,
+            enhance_mode=enhance_mode,
+            brightness=brightness, contrast=contrast, sharpness=sharpness
+        )
+
+        out_name = "scanned_document.pdf" if output_format == "pdf" else "scanned_images.zip"
+        mime = "application/pdf" if output_format == "pdf" else "application/zip"
+
+        return send_file(
+            result_path,
+            as_attachment=True,
+            download_name=out_name,
+            mimetype=mime,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.errorhandler(413)
 def too_large(_e):
     return jsonify({"error": "file too large (max 500MB)"}), 413
@@ -592,7 +786,8 @@ def too_large(_e):
 def not_found(_e):
     if request.path.startswith("/api/") or request.path in (
         "/merge", "/compress", "/convert", "/pdf-to-word", "/images-to-pdf",
-        "/split", "/video-to-images", "/video-to-pdf", "/watermark-text", "/watermark-image", "/lock", "/unlock"
+        "/split", "/video-to-images", "/video-to-pdf", "/watermark-text", "/watermark-image", "/lock", "/unlock",
+        "/scan", "/scan-preview", "/scan-batch"
     ):
         return jsonify({"error": "not found"}), 404
     return jsonify({"error": "not found"}), 404
