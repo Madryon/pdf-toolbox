@@ -624,6 +624,9 @@ def scan_preview_route():
             "job_id": job_id
         })
     except Exception as e:
+        import traceback
+        print(f"SCAN PREVIEW ERROR: {e}")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
@@ -675,7 +678,7 @@ def scan_route():
     try:
         if output_format == "pdf":
             # Scan to temp JPG first, then convert to PDF
-            temp_jpg = str(out_path.with_suffix(".jpg"))
+            temp_jpg = str(out_path) + ".tmp.jpg"
             pdftool.scan_document(
                 str(in_path), temp_jpg,
                 auto_detect=auto_detect, auto_deskew=auto_deskew,
@@ -694,6 +697,9 @@ def scan_route():
                 os.remove(temp_jpg)
             out_path = Path(pdf_path)
         else:
+            # Ensure correct extension
+            out_path = out_path.with_suffix(f".{output_format}")
+            out_name = f"{in_path.stem}_scanned.{output_format}"
             pdftool.scan_document(
                 str(in_path), str(out_path),
                 auto_detect=auto_detect, auto_deskew=auto_deskew,
@@ -716,6 +722,9 @@ def scan_route():
             mimetype=mime_types.get(output_format, "application/octet-stream"),
         )
     except Exception as e:
+        import traceback
+        print(f"SCAN ERROR: {e}")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
