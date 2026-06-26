@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Toolbox Index — All Tools</title>
+<title>PDF & Image Toolbox</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -33,6 +33,7 @@
     --radius-sm: 9px;
   }
 
+  /* === DARK THEME === */
   [data-theme="dark"] {
     --ink: #0F1115;
     --ink-soft: #181B22;
@@ -56,6 +57,7 @@
     --switcher-shadow: 0 6px 20px rgba(0,0,0,0.4);
   }
 
+  /* === BADDIE THEME (cool & funky) === */
   [data-theme="baddie"] {
     --ink: #0A0014;
     --ink-soft: rgba(30, 5, 60, 0.55);
@@ -80,6 +82,7 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   html { -webkit-text-size-adjust: 100%; }
 
   body {
@@ -91,6 +94,7 @@
     transition: background-color 0.4s ease, color 0.3s ease;
   }
 
+  /* Baddie gets a moving gradient mesh background */
   [data-theme="baddie"] body {
     background:
       radial-gradient(circle at 18% 12%, rgba(255,46,147,0.35), transparent 50%),
@@ -105,7 +109,7 @@
     100% { background-position: 8% 5%, -8% -5%, 5% -8%, 0 0; }
   }
 
-  a { color: inherit; text-decoration: none; }
+  a { color: inherit; }
 
   .topline {
     height: 3px;
@@ -113,7 +117,7 @@
     margin: 0 -16px;
   }
 
-  .container { max-width: 900px; margin: 0 auto; }
+  .container { max-width: 760px; margin: 0 auto; }
 
   header {
     display: flex;
@@ -150,7 +154,461 @@
     margin-bottom: 28px;
   }
 
-  /* === THEME SWITCHER === */
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 14px 6px 13px;
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-sm);
+    background: var(--ink-soft);
+    color: var(--text-faint);
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.1s;
+  }
+  .tab svg { width: 19px; height: 19px; stroke: currentColor; transition: stroke 0.15s; }
+  .tab:hover { color: var(--text); border-color: var(--brass-soft); }
+  .tab.active {
+    background: var(--ink-raised);
+    color: var(--text);
+    border-color: var(--brass);
+    box-shadow: inset 0 0 0 1px rgba(201,162,39,0.18);
+  }
+  .tab.active svg { stroke: var(--brass); }
+
+  /* Baddie: neon glow on active tab */
+  [data-theme="baddie"] .tab.active {
+    box-shadow: 0 0 22px rgba(255, 46, 147, 0.55), inset 0 0 0 1px rgba(0,240,255,0.4);
+  }
+  [data-theme="baddie"] .tab.active svg { stroke: var(--brass); }
+
+  .panel {
+    display: none;
+    background: var(--ink-soft);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius);
+    padding: 30px 26px 32px;
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .panel.active { display: block; animation: rise 0.25s ease; }
+
+  /* Baddie: glassmorphic panels */
+  [data-theme="baddie"] .panel {
+    background: rgba(20, 0, 40, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 46, 147, 0.28);
+    box-shadow: 0 8px 32px rgba(176, 38, 255, 0.18), 0 0 0 1px rgba(0,240,255,0.05);
+  }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  .panel-head { margin-bottom: 20px; }
+  .panel-head h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 19px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .panel-head p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .dropzone {
+    border: 1.5px dashed var(--ink-line);
+    border-radius: var(--radius-sm);
+    padding: 38px 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    background: var(--ink);
+  }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--brass); background: var(--ink-raised); }
+  .dropzone:hover svg, .dropzone.dragover svg { stroke: var(--stamp); }
+  .dropzone svg { width: 30px; height: 30px; stroke: var(--text-faint); margin-bottom: 12px; transition: stroke 0.15s; }
+  .dropzone .title { font-size: 14.5px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .dropzone .hint {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-faint);
+    font-size: 11.5px;
+    letter-spacing: 0.2px;
+  }
+  input[type="file"] { display: none; }
+
+  .file-list { margin-top: 14px; max-height: 220px; overflow-y: auto; }
+  .file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--ink-line);
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .file-item:last-child { border-bottom: none; }
+  .file-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 62%; }
+  .file-item .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-faint);
+    font-size: 11.5px;
+    margin-left: 10px;
+  }
+  .file-item .remove {
+    color: var(--stamp);
+    cursor: pointer;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 15px;
+    line-height: 1;
+    user-select: none;
+    transition: background 0.12s;
+  }
+  .file-item .remove:hover { background: rgba(189,58,43,0.15); }
+
+  .options {
+    margin-top: 22px;
+    padding: 16px 18px;
+    background: var(--ink);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-sm);
+  }
+  .option-row {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 13px;
+    flex-wrap: wrap;
+  }
+  .option-row:last-child { margin-bottom: 0; }
+  .option-row label {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+    min-width: 140px;
+  }
+  .option-row input[type="number"], .option-row select {
+    padding: 8px 11px;
+    border: 1px solid var(--ink-line);
+    border-radius: 7px;
+    font-size: 13.5px;
+    background: var(--ink-soft);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .option-row input[type="number"] { width: 100px; }
+  .option-row select { font-family: 'IBM Plex Sans', sans-serif; }
+  .option-row select:focus, .option-row input:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
+  .option-row input[type="range"] {
+    width: 200px;
+    accent-color: var(--brass);
+  }
+  .option-row .val {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--brass);
+    font-weight: 600;
+    min-width: 30px;
+    font-size: 13px;
+  }
+
+  .submit-btn {
+    position: relative;
+    background: var(--stamp);
+    color: #FFFFFF;
+    border: none;
+    padding: 15px 24px;
+    border-radius: 10px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 20px;
+    transition: background 0.15s, transform 0.08s, box-shadow 0.15s;
+    box-shadow: 0 3px 0 var(--stamp-deep);
+  }
+  .submit-btn:hover:not(:disabled) { background: #C7432F; }
+  .submit-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--stamp-deep); }
+  /* Baddie: animated rainbow submit button */
+  [data-theme="baddie"] .submit-btn {
+    background: linear-gradient(90deg, #FF2E93, #B026FF, #00F0FF, #FF2E93);
+    background-size: 220% 100%;
+    color: #FFFFFF;
+    box-shadow: 0 3px 0 var(--stamp-deep), 0 0 26px rgba(255,46,147,0.45);
+    animation: baddieRainbow 5s linear infinite;
+    text-shadow: 0 0 8px rgba(0,0,0,0.4);
+  }
+  [data-theme="baddie"] .submit-btn:hover:not(:disabled) {
+    background: linear-gradient(90deg, #FF2E93, #B026FF, #00F0FF, #FF2E93);
+    background-size: 220% 100%;
+    box-shadow: 0 3px 0 var(--stamp-deep), 0 0 34px rgba(0,240,255,0.6);
+  }
+  @keyframes baddieRainbow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 220% 50%; }
+  }
+  .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  .submit-btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+
+  .btn-spinner {
+    display: none;
+    width: 15px; height: 15px;
+    border: 2px solid rgba(241,233,216,0.35);
+    border-top-color: var(--paper);
+    border-radius: 50%;
+    margin: 0 auto;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .submit-btn.loading .btn-label { display: none; }
+  .submit-btn.loading .btn-spinner { display: block; }
+
+  .status { margin-top: 18px; }
+  .status:empty { margin-top: 0; }
+
+  .alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 9px;
+    font-size: 13.5px;
+    border-left: 3px solid var(--ink-line);
+    background: var(--ink);
+    word-break: break-word;
+  }
+  .alert-info { border-left-color: var(--brass); color: var(--text-muted); }
+  .alert-error { border-left-color: var(--stamp); color: #BD3A2B; }
+  .alert-mark { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+
+  .ticket {
+    position: relative;
+    background: var(--paper);
+    border-radius: 8px;
+    margin: 4px 6px;
+    overflow: visible;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .ticket { animation: ticketIn 0.32s cubic-bezier(.2,.9,.3,1.2); }
+  }
+  @keyframes ticketIn { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  .ticket::before, .ticket::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    background: var(--ink-soft);
+    border-radius: 50%;
+    top: 58px;
+    transform: translateY(-50%);
+  }
+  .ticket::before { left: -9px; }
+  .ticket::after { right: -9px; }
+  /* Baddie: ticket perforations match the glass */
+  [data-theme="baddie"] .ticket::before,
+  [data-theme="baddie"] .ticket::after {
+    background: rgba(20, 0, 40, 0.55);
+  }
+  /* Baddie: ticket itself becomes glass */
+  [data-theme="baddie"] .ticket {
+    background: rgba(30, 5, 60, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 46, 147, 0.3);
+  }
+
+  .ticket-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px 12px;
+    flex-wrap: wrap;
+  }
+  .ticket-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 1px;
+    color: var(--text-faint);
+    background: rgba(33,37,41,0.06);
+    padding: 3px 7px;
+    border-radius: 4px;
+  }
+  .ticket-no {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--on-paper);
+    font-weight: 600;
+    flex: 1;
+  }
+  .ticket-ready {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--moss);
+    border: 1.5px solid var(--moss);
+    border-radius: 5px;
+    padding: 2px 8px;
+    transform: rotate(-4deg);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .ticket-ready { animation: stamp 0.4s 0.1s cubic-bezier(.3,1.6,.6,1) backwards; }
+  }
+  @keyframes stamp { from { opacity: 0; transform: rotate(-4deg) scale(1.6); } to { opacity: 1; transform: rotate(-4deg) scale(1); } }
+
+  .ticket-perf {
+    height: 0;
+    border-top: 1.5px dashed var(--paper-dim);
+    margin: 0 16px;
+  }
+
+  .ticket-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 18px 16px;
+    flex-wrap: wrap;
+  }
+  .ticket-file { min-width: 0; }
+  .ticket-filename {
+    display: block;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 15.5px;
+    color: var(--on-paper);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 280px;
+  }
+  .ticket-meta {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--brass-soft);
+    margin-top: 3px;
+  }
+  .ticket-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--on-paper);
+    color: #FFFFFF;
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .ticket-download:hover { background: #343A40; }
+  [data-theme="dark"] .ticket-download:hover { background: #3A4150; }
+  [data-theme="baddie"] .ticket-download {
+    background: linear-gradient(135deg, #FF2E93, #B026FF);
+    box-shadow: 0 0 16px rgba(255,46,147,0.45);
+  }
+  [data-theme="baddie"] .ticket-download:hover {
+    background: linear-gradient(135deg, #FF2E93, #00F0FF);
+  }
+  .ticket-download svg { width: 14px; height: 14px; stroke: currentColor; }
+
+  .split-type-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .split-type-btn {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--ink-line);
+    border-radius: 7px;
+    background: var(--ink-soft);
+    color: var(--text-faint);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .split-type-btn:hover { color: var(--text); border-color: var(--brass-soft); }
+  .split-type-btn.active {
+    background: var(--ink-raised);
+    color: var(--text);
+    border-color: var(--brass);
+    box-shadow: inset 0 0 0 1px rgba(201,162,39,0.18);
+  }
+  [data-theme="baddie"] .split-type-btn.active {
+    box-shadow: 0 0 18px rgba(255, 46, 147, 0.5), inset 0 0 0 1px rgba(0,240,255,0.35);
+  }
+
+  .split-option { display: none; }
+  .split-option.active { display: block; }
+
+  .hint-text {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .option-row input[type="text"] {
+    padding: 8px 11px;
+    border: 1px solid var(--ink-line);
+    border-radius: 7px;
+    font-size: 13.5px;
+    background: var(--ink-soft);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    width: 240px;
+  }
+  .option-row input[type="text"]:focus { outline: 2px solid var(--brass); outline-offset: 1px; }
+
+  footer {
+    margin-top: 30px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--ink-line);
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-faint);
+    font-size: 11.5px;
+    letter-spacing: 0.2px;
+  }
+
+  @media (max-width: 700px) {
+    .tabs { grid-template-columns: repeat(4, 1fr); }
+    .tab { font-size: 10.5px; padding: 12px 4px; }
+    .tab svg { width: 16px; height: 16px; }
+    .panel { padding: 24px 18px 28px; }
+    .option-row label { min-width: 100%; }
+    .option-row input[type="text"] { width: 100%; }
+    .ticket-filename { max-width: 160px; }
+    .ticket-bottom { flex-direction: column; align-items: flex-start; }
+    .ticket-download { width: 100%; justify-content: center; }
+  }
+
+  /* =========================================================
+     THEME SWITCHER (3-position sliding pill: Light / Dark / Baddie)
+     ========================================================= */
   .theme-switcher {
     position: fixed;
     top: 16px;
@@ -213,16 +671,49 @@
   .theme-switcher button.active { color: #FFFFFF; }
   .theme-switcher button .ico { font-size: 13px; line-height: 1; }
 
+  /* Baddie: glowing title text */
+  [data-theme="baddie"] header h1 {
+    background: linear-gradient(90deg, #FF2E93, #B026FF, #00F0FF, #FF2E93);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: baddieRainbow 5s linear infinite;
+    filter: drop-shadow(0 0 12px rgba(255, 46, 147, 0.45));
+  }
+  [data-theme="baddie"] header p { color: var(--text-faint); letter-spacing: 0.4px; }
+  [data-theme="baddie"] .panel-head h2 { color: #FFFFFF; }
+  [data-theme="baddie"] .dropzone { background: rgba(20,0,40,0.4); border-color: rgba(255,46,147,0.35); }
+  [data-theme="baddie"] .options { background: rgba(20,0,40,0.4); border-color: rgba(255,46,147,0.2); }
+  [data-theme="baddie"] .supported-sites,
+  [data-theme="baddie"] .dropzone {
+    background: rgba(20,0,40,0.45);
+  }
+  [data-theme="baddie"] footer { color: var(--text-faint); }
+  [data-theme="baddie"] .ticket-label {
+    background: rgba(255,46,147,0.15);
+    color: #FF8FC8;
+  }
+  [data-theme="baddie"] .ticket-ready {
+    color: #00F0FF;
+    border-color: #00F0FF;
+    box-shadow: 0 0 12px rgba(0,240,255,0.4);
+  }
+  [data-theme="baddie"] .ticket-perf {
+    border-top-color: rgba(255,46,147,0.35);
+  }
+
   @media (max-width: 520px) {
     .theme-switcher { top: 10px; right: 10px; padding: 3px; }
     .theme-switcher button { padding: 7px 9px; font-size: 11px; min-width: 38px; }
     .theme-switcher button .lbl { display: none; }
   }
 
-  /* === CATEGORY SECTIONS === */
-  .category {
-    margin-bottom: 32px;
-  }
+  /* =========================================================
+     HOME VIEW — category sections & tool cards
+     ========================================================= */
+  .category { margin-bottom: 32px; }
   .cat-title {
     font-family: 'Fraunces', serif;
     font-weight: 600;
@@ -233,12 +724,7 @@
     align-items: center;
     gap: 10px;
   }
-  .cat-title .cat-icon {
-    width: 20px;
-    height: 20px;
-    stroke: var(--brass);
-    flex-shrink: 0;
-  }
+  .cat-title .cat-icon { width: 20px; height: 20px; stroke: var(--brass); flex-shrink: 0; }
   .cat-count {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
@@ -248,18 +734,18 @@
     border-radius: 999px;
     border: 1px solid var(--ink-line);
   }
-
-  /* === TOOL GRID === */
   .tool-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 14px;
   }
-
   .tool-card {
     display: flex;
     align-items: flex-start;
     gap: 14px;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
     padding: 18px 18px 18px 16px;
     background: var(--ink-soft);
     border: 1px solid var(--ink-line);
@@ -277,7 +763,6 @@
   }
   .tool-card:hover .tool-icon svg { stroke: var(--brass); }
   .tool-card:active { transform: translateY(0); }
-
   [data-theme="baddie"] .tool-card {
     background: rgba(20, 0, 40, 0.55);
     backdrop-filter: blur(10px);
@@ -289,7 +774,6 @@
     border-color: rgba(0, 240, 255, 0.5);
     box-shadow: 0 0 24px rgba(255, 46, 147, 0.35), 0 4px 20px rgba(176, 38, 255, 0.18);
   }
-
   .tool-icon {
     flex-shrink: 0;
     width: 44px;
@@ -302,10 +786,7 @@
     border: 1px solid var(--ink-line);
     transition: border-color 0.15s, background 0.15s;
   }
-  .tool-card:hover .tool-icon {
-    border-color: var(--brass);
-    background: rgba(201,162,39,0.08);
-  }
+  .tool-card:hover .tool-icon { border-color: var(--brass); background: rgba(201,162,39,0.08); }
   .tool-icon svg {
     width: 22px;
     height: 22px;
@@ -316,20 +797,11 @@
     stroke-linejoin: round;
     transition: stroke 0.15s;
   }
-
-  [data-theme="baddie"] .tool-icon {
-    background: rgba(50, 10, 90, 0.5);
-    border-color: rgba(255, 46, 147, 0.3);
-  }
-  [data-theme="baddie"] .tool-card:hover .tool-icon {
-    border-color: rgba(0, 240, 255, 0.5);
-    background: rgba(176, 38, 255, 0.15);
-  }
+  [data-theme="baddie"] .tool-icon { background: rgba(50, 10, 90, 0.5); border-color: rgba(255, 46, 147, 0.3); }
+  [data-theme="baddie"] .tool-card:hover .tool-icon { border-color: rgba(0, 240, 255, 0.5); background: rgba(176, 38, 255, 0.15); }
   [data-theme="baddie"] .tool-icon svg { stroke: var(--brass); }
-
   .tool-info { flex: 1; min-width: 0; }
   .tool-name {
-    font-family: 'IBM Plex Sans', sans-serif;
     font-weight: 600;
     font-size: 14.5px;
     color: var(--text);
@@ -347,7 +819,6 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
   .tool-badge {
     position: absolute;
     top: 10px;
@@ -363,46 +834,33 @@
     color: var(--brass-soft);
     border: 1px solid rgba(201,162,39,0.2);
   }
-  [data-theme="baddie"] .tool-badge {
-    background: rgba(255, 46, 147, 0.15);
-    color: #FF8FC8;
-    border-color: rgba(255, 46, 147, 0.3);
-  }
+  [data-theme="baddie"] .tool-badge { background: rgba(255, 46, 147, 0.15); color: #FF8FC8; border-color: rgba(255, 46, 147, 0.3); }
 
-  /* === BADDIE GLOWING TITLE === */
-  [data-theme="baddie"] header h1 {
-    background: linear-gradient(90deg, #FF2E93, #B026FF, #00F0FF, #FF2E93);
-    background-size: 220% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-    animation: baddieRainbow 5s linear infinite;
-    filter: drop-shadow(0 0 12px rgba(255, 46, 147, 0.45));
-  }
-  @keyframes baddieRainbow {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 220% 50%; }
-  }
-
-  footer {
-    margin-top: 30px;
-    padding-top: 18px;
-    border-top: 1px dashed var(--ink-line);
-    text-align: center;
+  /* "All Tools" back link shown above the tab bar inside Tool View */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
     font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
     color: var(--text-faint);
-    font-size: 11.5px;
-    letter-spacing: 0.2px;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 16px;
+    transition: color 0.15s;
   }
+  .back-link:hover { color: var(--brass); }
+  .back-link svg { stroke: currentColor; }
 
   @media (max-width: 700px) {
     .tool-grid { grid-template-columns: 1fr; }
-    header h1 { font-size: 22px; }
     .cat-title { font-size: 16px; }
   }
 </style>
-<base target="_blank">
 </head>
 <body>
 <div class="topline"></div>
@@ -430,174 +888,1144 @@
     </div>
     <div class="head-text">
       <h1>PDF &amp; Image Toolbox</h1>
-      <p>ALL YOUR TOOLS IN ONE PLACE &middot; CLICK ANY CARD TO START</p>
+      <p id="headerSub">ALL YOUR TOOLS IN ONE PLACE &middot; CLICK ANY CARD TO START</p>
     </div>
   </header>
   <div class="rule"></div>
 
-  <!-- ==================== PDF TOOLS ==================== -->
-  <div class="category">
-    <div class="cat-title">
-      <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/></svg>
-      PDF Tools
-      <span class="cat-count">7</span>
+  <!-- ==================== HOME VIEW (card directory) ==================== -->
+  <div id="homeView">
+
+    <div class="category">
+      <div class="cat-title">
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/></svg>
+        PDF Tools
+        <span class="cat-count">7</span>
+      </div>
+      <div class="tool-grid">
+
+        <button type="button" class="tool-card" data-tool="merge">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="11" height="11" rx="2"/><rect x="10" y="10" width="11" height="11" rx="2"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Merge PDFs</div>
+            <div class="tool-desc">Combine multiple PDFs and images into a single document, in the order you add them.</div>
+          </div>
+        </button>
+
+        <button type="button" class="tool-card" data-tool="compress">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M12 3v7M9 7l3 3 3-3"/><path d="M12 21v-7M9 17l3-3 3 3"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Compress PDF</div>
+            <div class="tool-desc">Shrink PDFs and images with smart compression. Lower quality = smaller files.</div>
+          </div>
+        </button>
+
+        <button type="button" class="tool-card" data-tool="split">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Split PDF</div>
+            <div class="tool-desc">Extract specific pages or split into equal-sized chunks by page count.</div>
+          </div>
+        </button>
+
+        <button type="button" class="tool-card" data-tool="convert">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Convert PDF</div>
+            <div class="tool-desc">Switch between PDF and image formats. Multi-page PDFs export as ZIP.</div>
+          </div>
+        </button>
+
+        <button type="button" class="tool-card" data-tool="pdf2word">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M8.5 13.5h2M8.5 16.5h2M8.5 19h4" stroke-linecap="round"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">PDF to Word</div>
+            <div class="tool-desc">Turn a PDF into an editable .docx file, keeping text, layout and tables intact.</div>
+          </div>
+        </button>
+
+        <button type="button" class="tool-card" data-tool="img2pdf">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="13" height="13" rx="2"/><circle cx="7.3" cy="8.3" r="1.2"/><path d="M4 14l3.3-3.3 2.4 2.2 2.8-3.6L16 13"/><path d="M18 9v9a2 2 0 01-2 2H8"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Images to PDF</div>
+            <div class="tool-desc">Combine several images into a single PDF, preserving the order you add them.</div>
+          </div>
+        </button>
+
+        <button type="button" class="tool-card" data-tool="watermark">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Watermark PDF</div>
+            <div class="tool-desc">Add text or image watermarks to every page of your PDF with custom styling.</div>
+          </div>
+        </button>
+
+      </div>
     </div>
-    <div class="tool-grid">
 
-      <a href="/index.html#merge" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="11" height="11" rx="2"/><rect x="10" y="10" width="11" height="11" rx="2"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Merge PDFs</div>
-          <div class="tool-desc">Combine multiple PDFs and images into a single document, in the order you add them.</div>
-        </div>
-      </a>
+    <div class="category">
+      <div class="cat-title">
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Security
+        <span class="cat-count">2</span>
+      </div>
+      <div class="tool-grid">
 
-      <a href="/index.html#compress" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 3v7M9 7l3 3 3-3"/><path d="M12 21v-7M9 17l3-3 3 3"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Compress PDF</div>
-          <div class="tool-desc">Shrink PDFs and images with smart compression. Lower quality = smaller files.</div>
-        </div>
-      </a>
+        <button type="button" class="tool-card" data-tool="lock">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Lock / Encrypt PDF</div>
+            <div class="tool-desc">Password-protect your PDF and set permission restrictions like printing and copying.</div>
+          </div>
+        </button>
 
-      <a href="/index.html#split" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Split PDF</div>
-          <div class="tool-desc">Extract specific pages or split into equal-sized chunks by page count.</div>
-        </div>
-      </a>
+        <button type="button" class="tool-card" data-tool="unlock">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><path d="M12 16v2"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Unlock / Decrypt PDF</div>
+            <div class="tool-desc">Remove password protection from an encrypted PDF. Auto-decrypt if no password is known.</div>
+          </div>
+        </button>
 
-      <a href="/index.html#convert" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Convert PDF</div>
-          <div class="tool-desc">Switch between PDF and image formats. Multi-page PDFs export as ZIP.</div>
-        </div>
-      </a>
-
-      <a href="/index.html#pdf2word" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M8.5 13.5h2M8.5 16.5h2M8.5 19h4" stroke-linecap="round"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">PDF to Word</div>
-          <div class="tool-desc">Turn a PDF into an editable .docx file, keeping text, layout and tables intact.</div>
-        </div>
-      </a>
-
-      <a href="/index.html#img2pdf" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="13" height="13" rx="2"/><circle cx="7.3" cy="8.3" r="1.2"/><path d="M4 14l3.3-3.3 2.4 2.2 2.8-3.6L16 13"/><path d="M18 9v9a2 2 0 01-2 2H8"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Images to PDF</div>
-          <div class="tool-desc">Combine several images into a single PDF, preserving the order you add them.</div>
-        </div>
-      </a>
-
-      <a href="/index.html#watermark" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Watermark PDF</div>
-          <div class="tool-desc">Add text or image watermarks to every page of your PDF with custom styling.</div>
-        </div>
-      </a>
-
+      </div>
     </div>
+
+    <div class="category">
+      <div class="cat-title">
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
+        Video Tools
+        <span class="cat-count">3</span>
+      </div>
+      <div class="tool-grid">
+
+        <button type="button" class="tool-card" data-tool="video">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Video to Images / PDF</div>
+            <div class="tool-desc">Extract frames from any video as images or compile them into a single PDF document.</div>
+          </div>
+        </button>
+
+        <button type="button" class="tool-card" data-tool="mp3">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Video to MP3</div>
+            <div class="tool-desc">Extract audio from any video file and save it as a high-quality MP3.</div>
+          </div>
+        </button>
+
+        <button type="button" class="tool-card" data-tool="download">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Video Downloader</div>
+            <div class="tool-desc">Download videos from 1,700+ supported sites. Paste a link and get your file.</div>
+          </div>
+          <span class="tool-badge">Popular</span>
+        </button>
+
+      </div>
+    </div>
+
   </div>
 
-  <!-- ==================== SECURITY ==================== -->
-  <div class="category">
-    <div class="cat-title">
-      <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-      Security
-      <span class="cat-count">2</span>
+  <!-- ==================== TOOL VIEW (existing app, unchanged) ==================== -->
+  <div id="toolView" style="display:none;">
+
+  <button type="button" class="back-link" id="backToHome">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    All Tools
+  </button>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="merge">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="11" height="11" rx="2"/><rect x="10" y="10" width="11" height="11" rx="2"/></svg>
+      Merge
+    </button>
+    <button class="tab" data-tab="compress">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v7M9 7l3 3 3-3"/><path d="M12 21v-7M9 17l3-3 3 3"/></svg>
+      Compress
+    </button>
+    <button class="tab" data-tab="convert">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3.5-3.5M20 17H7l3.5 3.5"/></svg>
+      Convert
+    </button>
+    <button class="tab" data-tab="img2pdf">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="13" height="13" rx="2"/><circle cx="7.3" cy="8.3" r="1.2"/><path d="M4 14l3.3-3.3 2.4 2.2 2.8-3.6L16 13"/><path d="M18 9v9a2 2 0 01-2 2H8"/></svg>
+      Images
+    </button>
+    <button class="tab" data-tab="pdf2word">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M8.5 13.5h2M8.5 16.5h2M8.5 19h4" stroke-linecap="round"/></svg>
+      PDF → Word
+    </button>
+    <button class="tab" data-tab="split">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
+      Split
+    </button>
+    <button class="tab" data-tab="video">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
+      Video
+    </button>
+    <button class="tab" data-tab="mp3">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      MP3
+    </button>
+    <button class="tab" data-tab="download">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      Download
+    </button>
+    <button class="tab" data-tab="watermark">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Watermark
+    </button>
+    <button class="tab" data-tab="lock">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      Lock
+    </button>
+    <button class="tab" data-tab="unlock">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><path d="M12 16v2"/></svg>
+      Unlock
+    </button>
+  </nav>
+
+  <div class="panel active" id="merge">
+    <div class="panel-head">
+      <h2>Merge into one PDF</h2>
+      <p>Combine PDFs and images into a single document, in the order you add them.</p>
     </div>
-    <div class="tool-grid">
-
-      <a href="/index.html#lock" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Lock / Encrypt PDF</div>
-          <div class="tool-desc">Password-protect your PDF and set permission restrictions like printing and copying.</div>
-        </div>
-      </a>
-
-      <a href="/index.html#unlock" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><path d="M12 16v2"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Unlock / Decrypt PDF</div>
-          <div class="tool-desc">Remove password protection from an encrypted PDF. Auto-decrypt if no password is known.</div>
-        </div>
-      </a>
-
+    <div class="dropzone" data-input="mergeFiles">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+      <div class="title">Drop PDFs or images here, or click to select</div>
+      <div class="hint">PDF · PNG · JPG · WEBP · BMP · TIFF</div>
+      <input type="file" id="mergeFiles" multiple>
     </div>
+    <div class="file-list" id="mergeList"></div>
+    <button class="submit-btn" id="mergeBtn"><span class="btn-label">Merge into PDF</span><div class="btn-spinner"></div></button>
+    <div class="status" id="mergeStatus"></div>
   </div>
 
-  <!-- ==================== VIDEO TOOLS ==================== -->
-  <div class="category">
-    <div class="cat-title">
-      <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
-      Video Tools
-      <span class="cat-count">3</span>
+  <div class="panel" id="compress">
+    <div class="panel-head">
+      <h2>Compress a file</h2>
+      <p>Shrink a PDF or image. Lower quality and dimension settings give smaller files.</p>
     </div>
-    <div class="tool-grid">
-
-      <a href="/index.html#video" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Video to Images / PDF</div>
-          <div class="tool-desc">Extract frames from any video as images or compile them into a single PDF document.</div>
-        </div>
-      </a>
-
-      <a href="/index.html#mp3" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Video to MP3</div>
-          <div class="tool-desc">Extract audio from any video file and save it as a high-quality MP3.</div>
-        </div>
-      </a>
-
-      <a href="/index.html#download" class="tool-card">
-        <div class="tool-icon">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">Video Downloader</div>
-          <div class="tool-desc">Download videos from 1,700+ supported sites. Paste a link and get your file.</div>
-        </div>
-        <span class="tool-badge">Popular</span>
-      </a>
-
+    <div class="dropzone" data-input="compressFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      <div class="title">Drop a PDF or image to compress</div>
+      <div class="hint">PDF · PNG · JPG · JPEG · WEBP · BMP · TIFF</div>
+      <input type="file" id="compressFile">
     </div>
+    <div class="file-list" id="compressList"></div>
+    <div class="options">
+      <div class="option-row">
+        <label>Quality</label>
+        <input type="range" id="cmpQuality" min="10" max="95" value="60">
+        <span class="val" id="cmpQualityVal">60</span>
+      </div>
+      <div class="option-row">
+        <label>Max dimension (px)</label>
+        <input type="number" id="cmpMaxDim" value="1600" min="0" max="8000">
+      </div>
+      <div class="option-row">
+        <label>PDF rasterize DPI</label>
+        <input type="number" id="cmpDpi" value="120" min="72" max="300">
+      </div>
+      <div class="option-row">
+        <label>PDF compression</label>
+        <select id="cmpMode">
+          <option value="auto">Auto (smart, recommended)</option>
+          <option value="native">Native (keeps text, smaller savings)</option>
+          <option value="rasterize">Rasterize (smallest files, no text)</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit-btn" id="compressBtn"><span class="btn-label">Compress</span><div class="btn-spinner"></div></button>
+    <div class="status" id="compressStatus"></div>
+  </div>
+
+  <div class="panel" id="convert">
+    <div class="panel-head">
+      <h2>Convert a file</h2>
+      <p>Switch between PDF and image formats. Multi-page PDFs come back as a ZIP.</p>
+    </div>
+    <div class="dropzone" data-input="convertFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      <div class="title">Drop a file to convert</div>
+      <div class="hint">PDF ↔ Image & many more but religious conversion is not possible</div>
+      <input type="file" id="convertFile">
+    </div>
+    <div class="file-list" id="convertList"></div>
+    <div class="options">
+      <div class="option-row">
+        <label>Output format</label>
+        <select id="convFormat">
+          <option value="pdf">PDF</option>
+          <option value="png">PNG</option>
+          <option value="jpg">JPEG</option>
+          <option value="webp">WebP</option>
+          <option value="bmp">BMP</option>
+          <option value="tiff">TIFF</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <label>Image quality</label>
+        <input type="number" id="convQuality" value="85" min="10" max="100">
+      </div>
+      <div class="option-row">
+        <label>PDF→Image DPI</label>
+        <input type="number" id="convDpi" value="150" min="72" max="600">
+      </div>
+    </div>
+    <button class="submit-btn" id="convertBtn"><span class="btn-label">Convert</span><div class="btn-spinner"></div></button>
+    <div class="status" id="convertStatus"></div>
+  </div>
+
+  <div class="panel" id="img2pdf">
+    <div class="panel-head">
+      <h2>Images into one PDF</h2>
+      <p>Combine several images into a single PDF, in the order you add them.</p>
+    </div>
+    <div class="dropzone" data-input="imgFiles">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <div class="title">Drop images to combine into one PDF</div>
+      <div class="hint">PNG · JPG · JPEG · WEBP · BMP · TIFF</div>
+      <input type="file" id="imgFiles" multiple accept="image/*">
+    </div>
+    <div class="file-list" id="imgList"></div>
+    <button class="submit-btn" id="imgBtn"><span class="btn-label">Create PDF</span><div class="btn-spinner"></div></button>
+    <div class="status" id="imgStatus"></div>
+  </div>
+
+  <div class="panel" id="pdf2word">
+    <div class="panel-head">
+      <h2>PDF to Word</h2>
+      <p>Turn a PDF into an editable .docx file, keeping text, layout and tables as close to the original as possible.</p>
+    </div>
+    <div class="dropzone" data-input="pdf2wordFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M8.5 13.5h2M8.5 16.5h2M8.5 19h4"/></svg>
+      <div class="title">Drop a PDF here, or click to select</div>
+      <div class="hint">PDF only · output is a .docx file</div>
+      <input type="file" id="pdf2wordFile" accept=".pdf">
+    </div>
+    <div class="file-list" id="pdf2wordList"></div>
+    <button class="submit-btn" id="pdf2wordBtn"><span class="btn-label">Convert to Word</span><div class="btn-spinner"></div></button>
+    <div class="status" id="pdf2wordStatus"></div>
+  </div>
+
+  <!-- SPLIT PANEL -->
+  <div class="panel" id="split">
+    <div class="panel-head">
+      <h2>Split a PDF</h2>
+      <p>Extract specific pages or split into equal-sized chunks.</p>
+    </div>
+    <div class="dropzone" data-input="splitFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><line x1="12" y1="12" x2="12" y2="21" stroke-width="1.2"/></svg>
+      <div class="title">Drop a PDF to split</div>
+      <div class="hint">PDF only</div>
+      <input type="file" id="splitFile" accept=".pdf">
+    </div>
+    <div class="file-list" id="splitList"></div>
+
+    <div class="split-type-toggle">
+      <button class="split-type-btn active" data-type="pages">By Page Ranges</button>
+      <button class="split-type-btn" data-type="chunks">By Chunk Size</button>
+    </div>
+
+    <div class="split-option active" id="splitPages">
+      <div class="options">
+        <div class="option-row">
+          <label>Page ranges</label>
+          <input type="text" id="splitRanges" value=" " placeholder="e.g. 1-3,4-7,8-10">
+        </div>
+        <div class="hint-text"> Type the range { 1-3 } in this format or just a page number </div>
+      </div>
+    </div>
+
+    <div class="split-option" id="splitChunks">
+      <div class="options">
+        <div class="option-row">
+          <label>Pages per chunk</label>
+          <input type="number" id="splitChunkSize" value="5" min="1" max="100">
+        </div>
+        <div class="hint-text">Splits the PDF into files of N pages each.</div>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="splitBtn"><span class="btn-label">Split PDF</span><div class="btn-spinner"></div></button>
+    <div class="status" id="splitStatus"></div>
+  </div>
+
+  <!-- VIDEO PANEL -->
+  <div class="panel" id="video">
+    <div class="panel-head">
+      <h2>Video to Images / PDF</h2>
+      <p>Extract frames from a video and save them as individual images or compile into a PDF.</p>
+    </div>
+    <div class="dropzone" data-input="videoFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
+      <div class="title">Drop a video file here</div>
+      <div class="hint">MP4 · AVI · MOV · MKV · WMV · WEBM · FLV · MPEG</div>
+      <input type="file" id="videoFile" accept="video/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.mpeg,.mpg,.3gp">
+    </div>
+    <div class="file-list" id="videoList"></div>
+    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 60 for best results. Leave empty for auto (all frames).</div>
+
+    <div class="split-type-toggle">
+      <button class="split-type-btn active" data-type="frames">Extract Frames (ZIP)</button>
+      <button class="split-type-btn" data-type="pdf">Convert to PDF</button>
+    </div>
+
+    <div class="split-option active" id="videoFrames">
+      <div class="options">
+        <div class="option-row">
+          <label>Output format</label>
+          <select id="videoFrameFormat">
+            <option value="png">PNG</option>
+            <option value="jpg">JPEG</option>
+            <option value="webp">WebP</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <label>Quality</label>
+          <input type="range" id="videoFrameQuality" min="10" max="100" value="85">
+          <span class="val" id="videoFrameQualityVal">85</span>
+        </div>
+        <div class="option-row">
+          <label>Target FPS</label>
+          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60">
+        </div>
+        <div class="option-row">
+          <label>Max frames</label>
+          <input type="number" id="videoFrameMax" value="" placeholder="all" min="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="split-option" id="videoPdf">
+      <div class="options">
+        <div class="option-row">
+          <label>Frame quality</label>
+          <input type="range" id="videoPdfQuality" min="10" max="100" value="75">
+          <span class="val" id="videoPdfQualityVal">75</span>
+        </div>
+        <div class="option-row">
+          <label>Target FPS</label>
+          <input type="number" id="videoPdfFps" value="" placeholder="auto" min="1" max="60">
+        </div>
+        <div class="option-row">
+          <label>Max frames</label>
+          <input type="number" id="videoPdfMax" value="" placeholder="all" min="1">
+        </div>
+        <div class="option-row">
+          <label>Max dimension (px)</label>
+          <input type="number" id="videoPdfMaxDim" value="" placeholder="original" min="100" max="4000">
+        </div>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="videoBtn"><span class="btn-label">Process Video</span><div class="btn-spinner"></div></button>
+    <div class="status" id="videoStatus"></div>
+  </div>
+
+  <!-- MP3 PANEL -->
+  <div class="panel" id="mp3">
+    <div class="panel-head">
+      <h2>Video to MP3</h2>
+      <p>Extract audio from any video file and save it as an MP3.</p>
+    </div>
+    <div class="dropzone" data-input="mp3File">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <div class="title">Drop a video to extract audio</div>
+      <div class="hint">MP4 · AVI · MOV · MKV · WMV · WEBM · FLV · MPEG</div>
+      <input type="file" id="mp3File" accept="video/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.mpeg,.mpg,.3gp">
+    </div>
+    <div class="file-list" id="mp3List"></div>
+    <div class="options">
+      <div class="option-row">
+        <label>Bitrate</label>
+        <select id="mp3Bitrate">
+          <option value="128k">128 kbps (smaller)</option>
+          <option value="192k" selected>192 kbps (balanced)</option>
+          <option value="320k">320 kbps (best quality)</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit-btn" id="mp3Btn"><span class="btn-label">Extract MP3</span><div class="btn-spinner"></div></button>
+    <div class="status" id="mp3Status"></div>
+  </div>
+
+  <!-- DOWNLOAD PANEL -->
+  <div class="panel" id="download">
+    <div class="panel-head">
+      <h2>Video Downloader</h2>
+      <p>Download videos from 1,700+ supported sites. Paste a link and get your file.</p>
+    </div>
+    <div class="options" style="margin-bottom:20px;">
+      <div class="option-row">
+        <label>Video URL</label>
+        <input type="text" id="downloadUrl" placeholder="Paste YouTube, Instagram, TikTok, Reddit, Twitter link..." style="flex:1; min-width:200px;">
+      </div>
+      <div class="option-row">
+        <label>Format</label>
+        <select id="downloadFormat">
+          <option value="mp4">MP4 Video</option>
+          <option value="mp3">MP3 Audio Only</option>
+        </select>
+      </div>
+      <div class="option-row" id="qualityRow">
+        <label>Quality</label>
+        <select id="downloadQuality">
+          <option value="best">Best Quality</option>
+          <option value="720">720p</option>
+          <option value="480">480p</option>
+          <option value="360">360p</option>
+          <option value="worst">Lowest (smallest)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SUPPORTED SITES SECTION -->
+        <div style="background:rgba(189,58,43,0.08); border:1px solid var(--stamp); border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:var(--stamp); font-weight:600;">
+      ⚠️ YouTube & YouTube Shorts downloads are NOT available due to Google blocking. Use Instagram, TikTok, Reddit, Twitter/X, Facebook, etc.
+    </div>
+    <div class="supported-sites" style="margin-bottom:20px; padding:16px 18px; background:var(--ink); border:1px solid var(--ink-line); border-radius:var(--radius-sm);">
+      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--moss)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Supported Sites (1,700+)
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:6px; font-size:11.5px; color:var(--text-muted); font-family:'IBM Plex Mono', monospace;">
+        
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Instagram Reels</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Instagram Posts</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> TikTok</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Twitter / X</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Facebook</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Reddit</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Xhamster</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> xnxx.com</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Twitch Clips</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> SoundCloud</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Spotify</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Bandcamp</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Pinterest</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> LinkedIn</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Snapchat</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Telegram</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> VKontakte</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Bilibili</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Weibo</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Rumble</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Odysee</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Streamable</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Gfycat</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Imgur</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Flickr</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Tumblr</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> 9GAG</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> BuzzFeed</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> CNN</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> BBC</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> ESPN</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> NBA</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> NFL</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> TED Talks</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Coursera</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Udemy</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Pornhub</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> Xvideos</div>
+        <div style="display:flex; align-items:center; gap:4px;"><span style="color:var(--moss);">✓</span> + 1,600 more</div>
+      </div>
+      <div style="margin-top:10px; font-size:11px; color:var(--text-faint); border-top:1px dashed var(--ink-line); padding-top:8px;">
+        ⚠️ <b>Note:</b>  YouTube & YouTube Shorts are currently blocked by Google and cannot be downloaded. Instagram, TikTok, Reddit, Twitter/X, Facebook, and other 1,600+ sites work fine.
+      </div>
+    </div>
+
+    <button class="submit-btn" id="downloadBtn"><span class="btn-label">Download</span><div class="btn-spinner"></div></button>
+    <div class="status" id="downloadStatus"></div>
+  </div>
+
+  <!-- WATERMARK PANEL -->
+  <div class="panel" id="watermark">
+    <div class="panel-head">
+      <h2>Watermark PDF</h2>
+      <p>Add text or image watermark to every page of your PDF.</p>
+    </div>
+    <div class="dropzone" data-input="watermarkFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M9.5 13h5"/></svg>
+      <div class="title">Drop a PDF to watermark</div>
+      <div class="hint">PDF only</div>
+      <input type="file" id="watermarkFile" accept=".pdf">
+    </div>
+    <div class="file-list" id="watermarkList"></div>
+
+    <div class="split-type-toggle">
+      <button class="split-type-btn active" data-type="text">Text Watermark</button>
+      <button class="split-type-btn" data-type="image">Image Watermark</button>
+    </div>
+
+    <div class="split-option active" id="watermarkText">
+      <div class="options">
+        <div class="option-row">
+          <label>Watermark text</label>
+          <input type="text" id="wmText" value="CONFIDENTIAL" placeholder="Your watermark text">
+        </div>
+        <div class="option-row">
+          <label>Font size</label>
+          <input type="number" id="wmFontSize" value="60" min="10" max="200">
+        </div>
+        <div class="option-row">
+          <label>Opacity</label>
+          <input type="range" id="wmOpacity" min="5" max="100" value="30">
+          <span class="val" id="wmOpacityVal">0.3</span>
+        </div>
+        <div class="option-row">
+          <label>Angle</label>
+          <input type="number" id="wmAngle" value="45" min="-180" max="180">
+        </div>
+        <div class="option-row">
+          <label>Spacing</label>
+          <input type="number" id="wmSpacing" value="200" min="50" max="500">
+        </div>
+        <div class="option-row">
+          <label>Color (R,G,B)</label>
+          <input type="text" id="wmColor" value="128,128,128" placeholder="e.g. 255,0,0 for red">
+        </div>
+      </div>
+    </div>
+
+    <div class="split-option" id="watermarkImage">
+      <div class="dropzone" data-input="wmImageFile" style="margin-bottom:16px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="13" height="13" rx="2"/><circle cx="7.3" cy="8.3" r="1.2"/><path d="M4 14l3.3-3.3 2.4 2.2 2.8-3.6L16 13"/></svg>
+        <div class="title">Drop watermark image (PNG with transparency works best)</div>
+        <div class="hint">PNG · JPG · WEBP</div>
+        <input type="file" id="wmImageFile" accept="image/*">
+      </div>
+      <div class="file-list" id="wmImageList"></div>
+      <div class="options">
+        <div class="option-row">
+          <label>Opacity</label>
+          <input type="range" id="wmImgOpacity" min="5" max="100" value="30">
+          <span class="val" id="wmImgOpacityVal">0.3</span>
+        </div>
+        <div class="option-row">
+          <label>Position</label>
+          <select id="wmPosition">
+            <option value="center">Center</option>
+            <option value="top-left">Top Left</option>
+            <option value="top-right">Top Right</option>
+            <option value="bottom-left">Bottom Left</option>
+            <option value="bottom-right">Bottom Right</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <label>Scale</label>
+          <input type="range" id="wmScale" min="5" max="100" value="30">
+          <span class="val" id="wmScaleVal">0.3</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="watermarkBtn"><span class="btn-label">Add Watermark</span><div class="btn-spinner"></div></button>
+    <div class="status" id="watermarkStatus"></div>
+  </div>
+
+  <!-- LOCK PANEL -->
+  <div class="panel" id="lock">
+    <div class="panel-head">
+      <h2>Lock / Encrypt PDF</h2>
+      <p>Password-protect your PDF and set permission restrictions.</p>
+    </div>
+    <div class="dropzone" data-input="lockFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <div class="title">Drop a PDF to lock</div>
+      <div class="hint">PDF only</div>
+      <input type="file" id="lockFile" accept=".pdf">
+    </div>
+    <div class="file-list" id="lockList"></div>
+    <div class="options">
+      <div class="option-row">
+        <label>Open password</label>
+        <input type="text" id="lockUserPass" value="" placeholder="Password to open PDF (optional)">
+      </div>
+      <div class="option-row">
+        <label>Owner password</label>
+        <input type="text" id="lockOwnerPass" value="" placeholder="Password for permissions (optional)">
+      </div>
+      <div class="option-row">
+        <label>Allow printing</label>
+        <select id="lockPrint">
+          <option value="true" selected>Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <label>Allow copying</label>
+        <select id="lockCopy">
+          <option value="true" selected>Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <label>Allow modifying</label>
+        <select id="lockModify">
+          <option value="false" selected>No</option>
+          <option value="true">Yes</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <label>Allow annotating</label>
+        <select id="lockAnnotate">
+          <option value="false" selected>No</option>
+          <option value="true">Yes</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <label>Allow form filling</label>
+        <select id="lockForm">
+          <option value="false" selected>No</option>
+          <option value="true">Yes</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit-btn" id="lockBtn"><span class="btn-label">Lock PDF</span><div class="btn-spinner"></div></button>
+    <div class="status" id="lockStatus"></div>
+  </div>
+
+  <!-- UNLOCK PANEL -->
+  <div class="panel" id="unlock">
+    <div class="panel-head">
+      <h2>Unlock / Decrypt PDF</h2>
+      <p>Remove password protection from an encrypted PDF.</p>
+    </div>
+    <div class="dropzone" data-input="unlockFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><path d="M12 16v2"/></svg>
+      <div class="title">Drop an encrypted PDF to unlock</div>
+      <div class="hint">PDF only · leave password blank if unknown</div>
+      <input type="file" id="unlockFile" accept=".pdf">
+    </div>
+    <div class="file-list" id="unlockList"></div>
+    <div class="options">
+      <div class="option-row">
+        <label>Password (if known)</label>
+        <input type="text" id="unlockPass" value="" placeholder="Leave blank to try auto-decrypt">
+      </div>
+    </div>
+    <button class="submit-btn" id="unlockBtn"><span class="btn-label">Unlock PDF</span><div class="btn-spinner"></div></button>
+    <div class="status" id="unlockStatus"></div>
+  </div>
+
   </div>
 
   <footer>Files are processed on the server and removed automatically after 1 hour</footer>
 </div>
 
 <script>
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  };
+});
+
+/* =========================================================
+   HOME VIEW <-> TOOL VIEW NAVIGATION
+   Clicking a tool card opens that tool inside Tool View.
+   "All Tools" returns to the card grid (Home View).
+   ========================================================= */
+function activateTool(name) {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(x => x.classList.toggle('active', x.id === name));
+  document.getElementById('homeView').style.display = 'none';
+  document.getElementById('toolView').style.display = 'block';
+  document.getElementById('headerSub').textContent = 'DROP YOUR FILES · WE PROCESS THEM · YOU CLAIM THE RESULT';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.querySelectorAll('.tool-card').forEach(card => {
+  card.addEventListener('click', () => activateTool(card.dataset.tool));
+});
+
+document.getElementById('backToHome').addEventListener('click', () => {
+  document.getElementById('toolView').style.display = 'none';
+  document.getElementById('homeView').style.display = 'block';
+  document.getElementById('headerSub').textContent = 'ALL YOUR TOOLS IN ONE PLACE · CLICK ANY CARD TO START';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+const state = {};
+let ticketCounter = Math.floor(Math.random() * 800) + 100;
+function nextTicketNo() { ticketCounter += 1; return String(ticketCounter).padStart(4, '0'); }
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+function setupDropzone(inputId, listId, multiple) {
+  const zone = document.querySelector(`[data-input="${inputId}"]`);
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  state[listId] = [];
+
+  zone.onclick = () => input.click();
+  input.onchange = (e) => { addFiles(Array.from(e.target.files)); };
+  zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('dragover'); };
+  zone.ondragleave = () => zone.classList.remove('dragover');
+  zone.ondrop = (e) => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    addFiles(Array.from(e.dataTransfer.files));
+  };
+
+  function addFiles(newFiles) {
+    if (multiple) {
+      state[listId] = state[listId].concat(newFiles);
+    } else {
+      state[listId] = newFiles.slice(0, 1);
+    }
+    render();
+  }
+
+  function render() {
+    list.innerHTML = state[listId].map((f, i) =>
+      `<div class="file-item"><span class="name">${escapeHtml(f.name)}</span><span class="meta">${fmtSize(f.size)}</span><span class="remove" data-i="${i}">✕</span></div>`
+    ).join('');
+    list.querySelectorAll('.remove').forEach(el => {
+      el.onclick = () => { state[listId].splice(parseInt(el.dataset.i), 1); render(); };
+    });
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+setupDropzone('mergeFiles', 'mergeList', true);
+setupDropzone('compressFile', 'compressList', false);
+setupDropzone('convertFile', 'convertList', false);
+setupDropzone('imgFiles', 'imgList', true);
+setupDropzone('pdf2wordFile', 'pdf2wordList', false);
+
+document.getElementById('cmpQuality').oninput = (e) => {
+  document.getElementById('cmpQualityVal').textContent = e.target.value;
+};
+
+function setStatus(id, text, kind) {
+  const el = document.getElementById(id);
+  el.className = 'status show';
+  const mark = kind === 'error' ? '✕' : '⏳';
+  el.innerHTML = `<div class="alert alert-${kind}"><span class="alert-mark">${mark}</span><span>${escapeHtml(text)}</span></div>`;
+}
+
+function renderTicket(id, { filename, sub, url }) {
+  const el = document.getElementById(id);
+  el.className = 'status show';
+  el.innerHTML = `
+    <div class="ticket">
+      <div class="ticket-top">
+        <span class="ticket-label">CLAIM TICKET</span>
+        <span class="ticket-no">No. ${nextTicketNo()}</span>
+        <span class="ticket-ready">READY</span>
+      </div>
+      <div class="ticket-perf"></div>
+      <div class="ticket-bottom">
+        <div class="ticket-file">
+          <span class="ticket-filename">${escapeHtml(filename)}</span>
+          <span class="ticket-meta">${escapeHtml(sub)}</span>
+        </div>
+        <a class="ticket-download" href="${url}" download="${escapeHtml(filename)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+          Download
+        </a>
+      </div>
+    </div>`;
+}
+
+async function postForm(url, formData) {
+  const r = await fetch(url, { method: 'POST', body: formData });
+  if (!r.ok) {
+    let msg = `request failed (${r.status})`;
+    try { const j = await r.json(); msg = j.error || msg; } catch {}
+    throw new Error(msg);
+  }
+  return await r.blob();
+}
+
+let currentBlobUrl = null;
+function downloadBlob(blob, name) {
+  if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+  currentBlobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = currentBlobUrl;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  return currentBlobUrl;
+}
+
+function setLoading(btnId, statusId, on) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
+  if (on) setStatus(statusId, 'Working... this can take a moment for large files', 'info');
+}
+
+document.getElementById('mergeBtn').onclick = async () => {
+  const files = state.mergeList;
+  if (files.length < 1) { setStatus('mergeStatus', 'Add at least one file', 'error'); return; }
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
+  setLoading('mergeBtn', 'mergeStatus', true);
+  try {
+    const blob = await postForm('/merge', fd);
+    const url = downloadBlob(blob, 'merged.pdf');
+    renderTicket('mergeStatus', { filename: 'merged.pdf', sub: `${files.length} files combined · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('mergeStatus', e.message, 'error');
+  }
+  setLoading('mergeBtn', 'mergeStatus', false);
+};
+
+document.getElementById('compressBtn').onclick = async () => {
+  const files = state.compressList;
+  if (files.length !== 1) { setStatus('compressStatus', 'Select exactly one file', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', files[0]);
+  fd.append('quality', document.getElementById('cmpQuality').value);
+  fd.append('max_dimension', document.getElementById('cmpMaxDim').value);
+  fd.append('dpi', document.getElementById('cmpDpi').value);
+  fd.append('mode', document.getElementById('cmpMode').value);
+  setLoading('compressBtn', 'compressStatus', true);
+  try {
+    const blob = await postForm('/compress', fd);
+    const orig = files[0];
+    const base = orig.name.replace(/\.[^.]+$/, '');
+    const ext = orig.name.split('.').pop();
+    const name = `${base}_compressed.${ext}`;
+    const url = downloadBlob(blob, name);
+    const savings = ((1 - blob.size / orig.size) * 100).toFixed(1);
+    const sign = blob.size <= orig.size ? 'smaller' : 'larger';
+    renderTicket('compressStatus', { filename: name, sub: `${fmtSize(orig.size)} → ${fmtSize(blob.size)} · ${Math.abs(savings)}% ${sign}`, url });
+  } catch (e) {
+    setStatus('compressStatus', e.message, 'error');
+  }
+  setLoading('compressBtn', 'compressStatus', false);
+};
+
+document.getElementById('convertBtn').onclick = async () => {
+  const files = state.convertList;
+  if (files.length !== 1) { setStatus('convertStatus', 'Select exactly one file', 'error'); return; }
+  const fmt = document.getElementById('convFormat').value;
+  const fd = new FormData();
+  fd.append('file', files[0]);
+  fd.append('format', fmt);
+  fd.append('quality', document.getElementById('convQuality').value);
+  fd.append('dpi', document.getElementById('convDpi').value);
+  setLoading('convertBtn', 'convertStatus', true);
+  try {
+    const blob = await postForm('/convert', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const isPdfToImg = files[0].name.toLowerCase().endsWith('.pdf') && fmt !== 'pdf';
+    const name = isPdfToImg ? `${base}_pages.zip` : `${base}.${fmt}`;
+    const url = downloadBlob(blob, name);
+    renderTicket('convertStatus', { filename: name, sub: `Converted to ${fmt.toUpperCase()} · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('convertStatus', e.message, 'error');
+  }
+  setLoading('convertBtn', 'convertStatus', false);
+};
+
+document.getElementById('imgBtn').onclick = async () => {
+  const files = state.imgList;
+  if (files.length < 1) { setStatus('imgStatus', 'Add at least one image', 'error'); return; }
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
+  setLoading('imgBtn', 'imgStatus', true);
+  try {
+    const blob = await postForm('/images-to-pdf', fd);
+    const url = downloadBlob(blob, 'images.pdf');
+    renderTicket('imgStatus', { filename: 'images.pdf', sub: `${files.length} images combined · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('imgStatus', e.message, 'error');
+  }
+  setLoading('imgBtn', 'imgStatus', false);
+};
+
+document.getElementById('pdf2wordBtn').onclick = async () => {
+  const files = state.pdf2wordList;
+  if (files.length !== 1) { setStatus('pdf2wordStatus', 'Select a PDF file', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', files[0]);
+  setLoading('pdf2wordBtn', 'pdf2wordStatus', true);
+  try {
+    const blob = await postForm('/pdf-to-word', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const name = `${base}.docx`;
+    const url = downloadBlob(blob, name);
+    renderTicket('pdf2wordStatus', { filename: name, sub: `Converted to DOCX · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('pdf2wordStatus', e.message, 'error');
+  }
+  setLoading('pdf2wordBtn', 'pdf2wordStatus', false);
+};
+
+// Setup new dropzones
+setupDropzone('splitFile', 'splitList', false);
+setupDropzone('videoFile', 'videoList', false);
+
+// Split/Video type toggle
+document.querySelectorAll('.split-type-toggle').forEach(toggle => {
+  toggle.querySelectorAll('.split-type-btn').forEach(btn => {
+    btn.onclick = () => {
+      toggle.querySelectorAll('.split-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const type = btn.dataset.type;
+      const parent = toggle.closest('.panel');
+      parent.querySelectorAll('.split-option').forEach(opt => opt.classList.remove('active'));
+      const prefix = parent.id === 'split' ? 'split' : 'video';
+      const suffix = type === 'pages' ? 'Pages' : type === 'chunks' ? 'Chunks' : type === 'frames' ? 'Frames' : 'Pdf';
+      parent.querySelector(`#${prefix}${suffix}`).classList.add('active');
+    };
+  });
+});
+
+// Range slider listeners for video
+document.getElementById('videoFrameQuality').oninput = (e) => {
+  document.getElementById('videoFrameQualityVal').textContent = e.target.value;
+};
+document.getElementById('videoPdfQuality').oninput = (e) => {
+  document.getElementById('videoPdfQualityVal').textContent = e.target.value;
+};
+
+// Split button handler
+document.getElementById('splitBtn').onclick = async () => {
+  const files = state.splitList;
+  if (files.length !== 1) { setStatus('splitStatus', 'Select a PDF file', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', files[0]);
+
+  const isPages = document.querySelector('#split .split-type-btn.active').dataset.type === 'pages';
+  fd.append('split_type', isPages ? 'pages' : 'chunks');
+
+  if (isPages) {
+    fd.append('ranges', document.getElementById('splitRanges').value);
+  } else {
+    fd.append('pages_per_chunk', document.getElementById('splitChunkSize').value);
+  }
+
+  setLoading('splitBtn', 'splitStatus', true);
+  try {
+    const blob = await postForm('/split', fd);
+    const isZip = blob.type === 'application/zip';
+    const name = isZip ? `${files[0].name.replace(/\.pdf$/i, '')}_split.zip` : 'split.pdf';
+    const url = downloadBlob(blob, name);
+    renderTicket('splitStatus', { filename: name, sub: isZip ? 'Multiple PDFs in ZIP' : 'Single PDF split', url });
+  } catch (e) {
+    setStatus('splitStatus', e.message, 'error');
+  }
+  setLoading('splitBtn', 'splitStatus', false);
+};
+
+// Video button handler
+document.getElementById('videoBtn').onclick = async () => {
+  const files = state.videoList;
+  if (files.length !== 1) { setStatus('videoStatus', 'Select a video file', 'error'); return; }
+
+  const isFrames = document.querySelector('#video .split-type-btn.active').dataset.type === 'frames';
+  const fd = new FormData();
+  fd.append('file', files[0]);
+
+  if (isFrames) {
+    fd.append('format', document.getElementById('videoFrameFormat').value);
+    fd.append('quality', document.getElementById('videoFrameQuality').value);
+    const fps = document.getElementById('videoFrameFps').value;
+    if (fps) fd.append('fps', fps);
+    const max = document.getElementById('videoFrameMax').value;
+    if (max) fd.append('max_frames', max);
+  } else {
+    fd.append('quality', document.getElementById('videoPdfQuality').value);
+    const fps = document.getElementById('videoPdfFps').value;
+    if (fps) fd.append('fps', fps);
+    const max = document.getElementById('videoPdfMax').value;
+    if (max) fd.append('max_frames', max);
+    const dim = document.getElementById('videoPdfMaxDim').value;
+    if (dim) fd.append('max_dimension', dim);
+  }
+
+  setLoading('videoBtn', 'videoStatus', true);
+  try {
+    const blob = await postForm(isFrames ? '/video-to-images' : '/video-to-pdf', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const name = isFrames ? `${base}_frames.zip` : `${base}_video.pdf`;
+    const url = downloadBlob(blob, name);
+    const sub = isFrames ? 'Frames extracted as ZIP' : 'Video converted to PDF';
+    renderTicket('videoStatus', { filename: name, sub: `${sub} · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('videoStatus', e.message, 'error');
+  }
+  setLoading('videoBtn', 'videoStatus', false);
+};
+
+// MP3 setup
+setupDropzone('mp3File', 'mp3List', false);
+
+document.getElementById('mp3Btn').onclick = async () => {
+  const files = state.mp3List;
+  if (files.length !== 1) { setStatus('mp3Status', 'Select a video file', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', files[0]);
+  fd.append('bitrate', document.getElementById('mp3Bitrate').value);
+  setLoading('mp3Btn', 'mp3Status', true);
+  try {
+    const blob = await postForm('/video-to-mp3', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const name = `${base}.mp3`;
+    const url = downloadBlob(blob, name);
+    renderTicket('mp3Status', { filename: name, sub: `Audio extracted · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('mp3Status', e.message, 'error');
+  }
+  setLoading('mp3Btn', 'mp3Status', false);
+};
+
+// Toggle quality select based on format
+document.getElementById('downloadFormat').onchange = (e) => {
+  const qualityRow = document.getElementById('qualityRow');
+  qualityRow.style.display = e.target.value === 'mp3' ? 'none' : 'flex';
+};
+
+// Download button handler
+document.getElementById('downloadBtn').onclick = async () => {
+  const url = document.getElementById('downloadUrl').value.trim();
+  if (!url) { setStatus('downloadStatus', 'Please enter a video URL', 'error'); return; }
+  if (!url.startsWith('http')) { setStatus('downloadStatus', 'Please enter a valid URL starting with http:// or https://', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('url', url);
+  fd.append('format', document.getElementById('downloadFormat').value);
+  fd.append('quality', document.getElementById('downloadQuality').value);
+
+  setLoading('downloadBtn', 'downloadStatus', true);
+  try {
+    const blob = await postForm('/download', fd);
+    const fmt = document.getElementById('downloadFormat').value;
+    const name = fmt === 'mp3' ? 'downloaded_audio.mp3' : 'downloaded_video.mp4';
+    const url = downloadBlob(blob, name);
+    renderTicket('downloadStatus', { filename: name, sub: `Downloaded · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('downloadStatus', e.message, 'error');
+  }
+  setLoading('downloadBtn', 'downloadStatus', false);
+};
+
 /* =========================================================
    THEME SWITCHER LOGIC
+   - Reads stored preference (localStorage)
+   - Slides the indicator to the active segment
+   - Updates <html data-theme="..."> which re-skins everything
    ========================================================= */
 (function initThemeSwitcher() {
   const root = document.documentElement;
