@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <style>
   :root {
     --ink: #FFFFFF;
@@ -156,7 +157,7 @@
 
   .tabs {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 6px;
     margin-bottom: 14px;
   }
@@ -594,8 +595,11 @@
     letter-spacing: 0.2px;
   }
 
-  @media (max-width: 700px) {
+  @media (max-width: 900px) {
     .tabs { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .tabs { grid-template-columns: repeat(3, 1fr); }
     .tab { font-size: 10.5px; padding: 12px 4px; }
     .tab svg { width: 16px; height: 16px; }
     .panel { padding: 24px 18px 28px; }
@@ -860,8 +864,463 @@
     .tool-grid { grid-template-columns: 1fr; }
     .cat-title { font-size: 16px; }
   }
+
+  /* =========================================================
+     DOC SCANNER (premium)
+     ========================================================= */
+  .scanner-layout {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 820px) {
+    .scanner-layout { grid-template-columns: 1fr; }
+  }
+
+  .scanner-stage {
+    background: var(--ink);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    position: relative;
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+  }
+  .scanner-stage-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ink-line);
+    background: var(--ink-soft);
+  }
+  .scanner-stage-toolbar .pg-info {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .scanner-stage-toolbar .pg-info b { color: var(--text); }
+
+  .stage-canvas-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      repeating-conic-gradient(var(--ink-raised) 0 25%, var(--ink-soft) 0 50%);
+    background-size: 22px 22px;
+    overflow: hidden;
+    position: relative;
+    min-height: 320px;
+    padding: 8px;
+  }
+  [data-theme="dark"] .stage-canvas-wrap,
+  [data-theme="baddie"] .stage-canvas-wrap {
+    background:
+      repeating-conic-gradient(rgba(255,255,255,0.04) 0 25%, transparent 0 50%) 50% / 22px 22px,
+      var(--ink);
+  }
+  .stage-canvas-wrap img {
+    max-width: 100%;
+    max-height: 520px;
+    user-select: none;
+    -webkit-user-drag: none;
+    display: block;
+    border-radius: 6px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.18);
+  }
+  .stage-canvas-wrap.empty {
+    color: var(--text-faint);
+    font-size: 13.5px;
+    text-align: center;
+    padding: 32px 16px;
+    line-height: 1.6;
+  }
+
+  /* Cropper.js overrides (scoped under #scannerStage) */
+  .cropper-container { background: #000; }
+  .cropper-view-box,
+  .cropper-face { border-radius: 0; }
+  .cropper-line,
+  .cropper-point { background-color: var(--brass) !important; }
+  .cropper-line { opacity: 0.85; }
+  .cropper-point { width: 12px !important; height: 12px !important; opacity: 1; }
+  .cropper-dashed { border: 1px dashed rgba(255,255,255,0.5) !important; }
+
+  .scanner-side {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .scan-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .scan-action-row .scan-btn {
+    flex: 1 1 calc(50% - 8px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 12px 14px;
+    border: 1px solid var(--ink-line);
+    border-radius: 9px;
+    background: var(--ink-soft);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.08s;
+  }
+  .scan-action-row .scan-btn:hover { border-color: var(--brass); background: var(--ink-raised); }
+  .scan-action-row .scan-btn:active { transform: translateY(1px); }
+  .scan-action-row .scan-btn.primary {
+    background: var(--stamp);
+    color: #fff;
+    border-color: var(--stamp);
+  }
+  .scan-action-row .scan-btn.primary:hover { background: #C7432F; }
+  .scan-action-row .scan-btn svg {
+    width: 16px; height: 16px; stroke: currentColor;
+    fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  }
+  [data-theme="baddie"] .scan-action-row .scan-btn.primary {
+    background: linear-gradient(135deg, #FF2E93, #B026FF);
+    border: none;
+    box-shadow: 0 0 18px rgba(255,46,147,0.45);
+  }
+
+  .scan-controls {
+    background: var(--ink);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-sm);
+    padding: 14px 14px 6px;
+  }
+  .scan-section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 0 0 10px;
+  }
+
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .filter-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 6px;
+    border: 1px solid var(--ink-line);
+    border-radius: 8px;
+    background: var(--ink-soft);
+    color: var(--text-muted);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .filter-chip:hover { color: var(--text); border-color: var(--brass-soft); }
+  .filter-chip.active {
+    color: var(--text);
+    border-color: var(--brass);
+    background: var(--ink-raised);
+    box-shadow: inset 0 0 0 1px rgba(201,162,39,0.18);
+  }
+  .filter-chip .chip-thumb {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 5px;
+    border: 1px solid var(--ink-line);
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-faint);
+    overflow: hidden;
+    position: relative;
+  }
+  .filter-chip .chip-thumb::before {
+    content: "Aa";
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: #212529;
+  }
+  .filter-chip[data-filter="bw"] .chip-thumb { background: #fff; }
+  .filter-chip[data-filter="bw"] .chip-thumb::before { color: #000; }
+  .filter-chip[data-filter="grayscale"] .chip-thumb { background: #777; }
+  .filter-chip[data-filter="grayscale"] .chip-thumb::before { color: #fff; }
+  .filter-chip[data-filter="magic_color"] .chip-thumb {
+    background: linear-gradient(135deg, #fff, #e8eef9);
+  }
+  .filter-chip[data-filter="magic_color"] .chip-thumb::before { color: #1a73e8; }
+  .filter-chip[data-filter="enhanced"] .chip-thumb {
+    background: linear-gradient(135deg, #fff, #fff8e1);
+  }
+  .filter-chip[data-filter="enhanced"] .chip-thumb::before { color: #b45309; }
+  .filter-chip[data-filter="original"] .chip-thumb { background: #f3f4f6; }
+  .filter-chip[data-filter="original"] .chip-thumb::before { color: #374151; }
+  .filter-chip[data-filter="sharpen"] .chip-thumb { background: #fafafa; }
+  .filter-chip[data-filter="sharpen"] .chip-thumb::before { color: #111; text-shadow: 1px 1px 0 #888; }
+  [data-theme="dark"] .filter-chip[data-filter="bw"] .chip-thumb { background: #1a1d24; }
+  [data-theme="dark"] .filter-chip[data-filter="bw"] .chip-thumb::before { color: #f8f9fa; }
+  [data-theme="dark"] .filter-chip[data-filter="original"] .chip-thumb { background: #2a2f38; }
+  [data-theme="dark"] .filter-chip[data-filter="original"] .chip-thumb::before { color: #f3f4f6; }
+  [data-theme="baddie"] .filter-chip.active {
+    box-shadow: 0 0 18px rgba(255, 46, 147, 0.55), inset 0 0 0 1px rgba(0,240,255,0.4);
+  }
+
+  .scan-slider-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 38px;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .scan-slider-row label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .scan-slider-row input[type="range"] { accent-color: var(--brass); }
+  .scan-slider-row .val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--brass);
+    text-align: right;
+  }
+  .scan-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .scan-checkbox-row input { accent-color: var(--brass); }
+
+  .scan-rotate-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .scan-rotate-row button {
+    flex: 1;
+    padding: 8px 0;
+    border: 1px solid var(--ink-line);
+    border-radius: 7px;
+    background: var(--ink-soft);
+    color: var(--text-muted);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .scan-rotate-row button:hover { color: var(--text); border-color: var(--brass); }
+
+  /* Page strip (multi-page scans) */
+  .scan-pages-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 8px 4px 4px;
+    margin-top: 4px;
+    border-top: 1px dashed var(--ink-line);
+    scrollbar-width: thin;
+  }
+  .scan-pages-strip::-webkit-scrollbar { height: 6px; }
+  .scan-pages-strip::-webkit-scrollbar-thumb { background: var(--ink-line); border-radius: 999px; }
+  .scan-page-thumb {
+    position: relative;
+    flex-shrink: 0;
+    width: 76px;
+    border-radius: 7px;
+    border: 2px solid var(--ink-line);
+    background: var(--ink-raised);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .scan-page-thumb img { width: 100%; height: 92px; object-fit: cover; display: block; }
+  .scan-page-thumb.active {
+    border-color: var(--brass);
+    box-shadow: 0 0 0 1px rgba(201,162,39,0.25);
+  }
+  .scan-page-thumb .pg-no {
+    position: absolute;
+    top: 4px; left: 4px;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .scan-page-thumb .pg-del {
+    position: absolute;
+    top: 3px; right: 3px;
+    width: 18px; height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .scan-page-thumb .pg-del:hover { background: var(--stamp); }
+
+  /* Camera modal */
+  .scan-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+  }
+  .scan-modal-backdrop.open { display: flex; }
+  .scan-modal {
+    background: var(--ink-soft);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 720px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 95vh;
+  }
+  .scan-modal-head {
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--ink-line);
+  }
+  .scan-modal-head h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text);
+  }
+  .scan-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  .scan-modal-close:hover { color: var(--stamp); }
+  .scan-modal-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #000;
+  }
+  .scan-modal-body video {
+    width: 100%;
+    max-height: 60vh;
+    background: #000;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  .scan-modal-body canvas { display: none; }
+  .scan-modal-foot {
+    padding: 12px 14px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    border-top: 1px solid var(--ink-line);
+    background: var(--ink-soft);
+  }
+  .scan-modal-foot .scan-btn { flex: 0 0 auto; }
+  .scan-modal-foot .capture-btn {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 4px solid #fff; background: var(--stamp);
+    cursor: pointer; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 4px rgba(189,58,43,0.25);
+  }
+  .scan-modal-foot .capture-btn:hover { background: #C7432F; }
+  .scan-modal-foot .capture-btn svg {
+    width: 26px; height: 26px; stroke: #fff; fill: none;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .scan-modal-foot .secondary {
+    padding: 12px 18px;
+    border: 1px solid var(--ink-line);
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Build options bar (final step) */
+  .scan-build-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--ink);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-sm);
+    margin-top: 14px;
+  }
+  @media (max-width: 600px) {
+    .scan-build-row { grid-template-columns: 1fr; }
+  }
+  .scan-build-row label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .scan-build-row select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--ink-line);
+    border-radius: 7px;
+    background: var(--ink-soft);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+  }
 </style>
-<base target="_blank">
 </head>
 <body>
 <div class="topline"></div>
@@ -899,9 +1358,31 @@
 
     <div class="category">
       <div class="cat-title">
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h4l2-2h6l2 2h4v12H3z"/><circle cx="12" cy="13" r="4"/></svg>
+        Scanner
+        <span class="cat-count">1</span>
+      </div>
+      <div class="tool-grid">
+
+        <button type="button" class="tool-card" data-tool="scanner">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 012-2h2M21 7V5a2 2 0 00-2-2h-2M3 17v2a2 2 0 002 2h2M21 17v2a2 2 0 01-2 2h-2"/><rect x="6" y="3" width="12" height="18" rx="1"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">Doc Scanner</div>
+            <div class="tool-desc">Capture a document with your camera, auto-enhance, crop, and export as editable DOCX or PDF.</div>
+          </div>
+          <span class="tool-badge">New</span>
+        </button>
+
+      </div>
+    </div>
+
+
+
+    <div class="category">
+      <div class="cat-title">
         <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/></svg>
         PDF Tools
-        <span class="cat-count">8</span>
+        <span class="cat-count">7</span>
       </div>
       <div class="tool-grid">
 
@@ -959,15 +1440,6 @@
             <div class="tool-name">Watermark PDF</div>
             <div class="tool-desc">Add text or image watermarks to every page of your PDF with custom styling.</div>
           </div>
-        </button>
-
-        <button type="button" class="tool-card" data-tool="scanner">
-          <div class="tool-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/><circle cx="15" cy="15" r="2"/></svg></div>
-          <div class="tool-info">
-            <div class="tool-name">Doc Scanner</div>
-            <div class="tool-desc">Premium document scanner with auto-detect, perspective fix, deskew, crop & enhance.</div>
-          </div>
-          <span class="tool-badge">New</span>
         </button>
 
       </div>
@@ -1047,7 +1519,11 @@
   </button>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="merge">
+    <button class="tab active" data-tab="scanner">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 012-2h2M21 7V5a2 2 0 00-2-2h-2M3 17v2a2 2 0 002 2h2M21 17v2a2 2 0 01-2 2h-2"/><rect x="6" y="3" width="12" height="18" rx="1"/></svg>
+      Scanner
+    </button>
+    <button class="tab" data-tab="merge">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="11" height="11" rx="2"/><rect x="10" y="10" width="11" height="11" rx="2"/></svg>
       Merge
     </button>
@@ -1095,13 +1571,150 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><path d="M12 16v2"/></svg>
       Unlock
     </button>
-    <button class="tab" data-tab="scanner">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/><circle cx="15" cy="15" r="2"/></svg>
-      Scanner
-    </button>
   </nav>
 
-  <div class="panel active" id="merge">
+  <div class="panel active" id="scanner">
+    <div class="panel-head">
+      <h2>Doc Scanner</h2>
+      <p>Snap a document with your camera or upload a photo. Auto-enhance, crop, adjust quality, then export as editable DOCX or PDF.</p>
+    </div>
+
+    <!-- CAMERA MODAL -->
+    <div class="scan-modal-backdrop" id="cameraModal">
+      <div class="scan-modal">
+        <div class="scan-modal-head">
+          <h3>Capture a document</h3>
+          <button type="button" class="scan-modal-close" id="cameraClose" aria-label="Close">×</button>
+        </div>
+        <div class="scan-modal-body">
+          <video id="cameraVideo" autoplay playsinline muted></video>
+          <canvas id="cameraCanvas"></canvas>
+        </div>
+        <div class="scan-modal-foot">
+          <button type="button" class="secondary" id="cameraSwitch">Flip</button>
+          <button type="button" class="capture-btn" id="cameraShutter" aria-label="Capture">
+            <svg viewBox="0 0 24 24"><path d="M5 7h3l2-2h4l2 2h3v12H5z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+          <button type="button" class="secondary" id="cameraCancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN LAYOUT: stage on left, controls on right -->
+    <div class="scanner-layout">
+      <div class="scanner-stage">
+        <div class="scanner-stage-toolbar">
+          <span class="pg-info">Page <b id="scanCurrentPage">0</b> of <b id="scanTotalPages">0</b></span>
+          <span class="pg-info" id="scanDimensionInfo"></span>
+        </div>
+        <div class="stage-canvas-wrap empty" id="stageCanvasWrap">
+          <div>
+            <div style="font-family:'Fraunces',serif; font-size:22px; color:var(--text-muted); margin-bottom:8px;">📄 No page loaded</div>
+            <div>Use <b>Capture</b> or <b>Upload</b> to add a scanned page.</div>
+          </div>
+        </div>
+        <div class="scan-pages-strip" id="scanPagesStrip"></div>
+      </div>
+
+      <div class="scanner-side">
+        <div class="scan-action-row">
+          <button type="button" class="scan-btn primary" id="scanCameraBtn">
+            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Capture
+          </button>
+          <button type="button" class="scan-btn" id="scanUploadBtn">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            Upload
+          </button>
+          <input type="file" id="scanUploadInput" accept="image/*" multiple style="display:none;">
+          <button type="button" class="scan-btn" id="scanCropBtn">
+            <svg viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 002 2h14"/><path d="M2 6h14a2 2 0 012 2v14"/></svg>
+            Crop
+          </button>
+          <button type="button" class="scan-btn" id="scanResetBtn">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.3L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-15.5 6.3L3 16"/><path d="M3 21v-5h5"/></svg>
+            Reset
+          </button>
+        </div>
+
+        <div class="scan-controls">
+          <div class="scan-section-title">Quality filter</div>
+          <div class="filter-grid" id="filterGrid">
+            <button type="button" class="filter-chip active" data-filter="magic_color">Magic Color</button>
+            <button type="button" class="filter-chip" data-filter="bw">B&amp;W</button>
+            <button type="button" class="filter-chip" data-filter="grayscale">Grayscale</button>
+            <button type="button" class="filter-chip" data-filter="enhanced">Enhanced</button>
+            <button type="button" class="filter-chip" data-filter="sharpen">Sharpen</button>
+            <button type="button" class="filter-chip" data-filter="original">Original</button>
+          </div>
+        </div>
+
+        <div class="scan-controls">
+          <div class="scan-section-title">Adjust</div>
+          <div class="scan-slider-row">
+            <label>Brightness</label>
+            <input type="range" id="scanBrightness" min="50" max="180" value="100">
+            <span class="val" id="scanBrightnessVal">100%</span>
+          </div>
+          <div class="scan-slider-row">
+            <label>Contrast</label>
+            <input type="range" id="scanContrast" min="50" max="200" value="100">
+            <span class="val" id="scanContrastVal">100%</span>
+          </div>
+          <div class="scan-slider-row">
+            <label>Sharpness</label>
+            <input type="range" id="scanSharpness" min="0" max="300" value="100">
+            <span class="val" id="scanSharpnessVal">100%</span>
+          </div>
+
+          <label class="scan-checkbox-row">
+            <input type="checkbox" id="scanPerspective">
+            Auto-detect edges &amp; perspective
+          </label>
+
+          <div class="scan-rotate-row">
+            <button type="button" id="scanRotateL">↺ Rotate Left</button>
+            <button type="button" id="scanRotateR">↻ Rotate Right</button>
+          </div>
+        </div>
+
+        <div class="scan-build-row">
+          <div>
+            <label for="scanOutputFmt">Export as</label>
+            <select id="scanOutputFmt">
+              <option value="docx">DOCX (editable Word)</option>
+              <option value="pdf">PDF (image-only)</option>
+            </select>
+          </div>
+          <div>
+            <label for="scanOcrLang">OCR language</label>
+            <select id="scanOcrLang">
+              <option value="eng">English</option>
+              <option value="hin">Hindi</option>
+              <option value="spa">Spanish</option>
+              <option value="fra">French</option>
+              <option value="deu">German</option>
+              <option value="por">Portuguese</option>
+              <option value="ara">Arabic</option>
+              <option value="chi_sim">Chinese (Simplified)</option>
+              <option value="jpn">Japanese</option>
+              <option value="rus">Russian</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="scan-checkbox-row" style="margin-top:6px;">
+          <input type="checkbox" id="scanUseOcr" checked>
+          Run OCR (extract text into editable DOCX)
+        </label>
+
+        <button type="button" class="submit-btn" id="scanBuildBtn"><span class="btn-label">Export Document</span><div class="btn-spinner"></div></button>
+        <div class="status" id="scanStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="merge">
     <div class="panel-head">
       <h2>Merge into one PDF</h2>
       <p>Combine PDFs and images into a single document, in the order you add them.</p>
@@ -1628,151 +2241,449 @@
 
   </div>
 
-
-  <!-- SCANNER PANEL -->
-  <div class="panel" id="scanner">
-    <div class="panel-head">
-      <h2>Premium Document Scanner</h2>
-      <p>Auto-detect documents, fix perspective, deskew, crop, and enhance — just like a premium scanner app.</p>
-    </div>
-
-    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-      <div class="dropzone" data-input="scannerFile" style="flex:1; min-width:260px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/><circle cx="15" cy="15" r="2"/></svg>
-        <div class="title">Drop a photo of your document</div>
-        <div class="hint">PNG · JPG · JPEG · WEBP · BMP · TIFF</div>
-        <input type="file" id="scannerFile" accept="image/*">
-      </div>
-      <button type="button" class="dropzone" id="cameraBtn" style="flex:1; min-width:260px; background:var(--ink-raised); border-style:solid;">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <div class="title">Use Camera</div>
-        <div class="hint">Take a photo with your webcam</div>
-      </button>
-    </div>
-    <div class="file-list" id="scannerList"></div>
-
-    <!-- Preview Area -->
-    <div id="scannerPreviewArea" style="display:none; margin-top:20px;">
-      <div style="font-size:13px; font-weight:600; color:var(--text-muted); margin-bottom:10px;">📄 Preview — Drag corners to adjust crop, or use auto-detect</div>
-      <div id="scannerCanvasWrap" style="position:relative; display:inline-block; max-width:100%; border:2px solid var(--ink-line); border-radius:var(--radius-sm); overflow:hidden;">
-        <img id="scannerPreviewImg" style="display:block; max-width:100%; height:auto;" src="" alt="Preview">
-        <canvas id="scannerOverlay" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:auto;"></canvas>
-      </div>
-      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-        <button type="button" class="split-type-btn" id="scannerAutoDetect" style="flex:0 0 auto;">🔍 Auto-Detect Document</button>
-        <button type="button" class="split-type-btn" id="scannerResetCrop" style="flex:0 0 auto;">↺ Reset Crop</button>
-      </div>
-    </div>
-
-    <div class="options" style="margin-top:22px;">
-      <div class="option-row">
-        <label>Scan mode</label>
-        <select id="scanMode">
-          <option value="auto">Auto Enhance (recommended)</option>
-          <option value="bw">Black & White</option>
-          <option value="gray">Grayscale</option>
-          <option value="color">Color Document</option>
-          <option value="original">Original (no enhancement)</option>
-        </select>
-      </div>
-      <div class="option-row">
-        <label>Auto-detect</label>
-        <select id="scanAutoDetect">
-          <option value="true" selected>On</option>
-          <option value="false">Off</option>
-        </select>
-      </div>
-      <div class="option-row">
-        <label>Auto-deskew</label>
-        <select id="scanAutoDeskew">
-          <option value="true" selected>On</option>
-          <option value="false">Off</option>
-        </select>
-      </div>
-      <div class="option-row">
-        <label>Brightness</label>
-        <input type="range" id="scanBrightness" min="-50" max="50" value="0">
-        <span class="val" id="scanBrightnessVal">0</span>
-      </div>
-      <div class="option-row">
-        <label>Contrast</label>
-        <input type="range" id="scanContrast" min="-50" max="50" value="0">
-        <span class="val" id="scanContrastVal">0</span>
-      </div>
-      <div class="option-row">
-        <label>Sharpness</label>
-        <input type="range" id="scanSharpness" min="-50" max="50" value="0">
-        <span class="val" id="scanSharpnessVal">0</span>
-      </div>
-      <div class="option-row">
-        <label>Output format</label>
-        <select id="scanOutputFormat">
-          <option value="pdf">PDF (300 DPI)</option>
-          <option value="jpg">JPEG</option>
-          <option value="png">PNG</option>
-          <option value="webp">WebP</option>
-        </select>
-      </div>
-      <div class="option-row">
-        <label>Quality</label>
-        <input type="range" id="scanQuality" min="50" max="100" value="95">
-        <span class="val" id="scanQualityVal">95</span>
-      </div>
-    </div>
-
-    <button class="submit-btn" id="scannerBtn"><span class="btn-label">Scan Document</span><div class="btn-spinner"></div></button>
-    <div class="status" id="scannerStatus"></div>
-
-    <!-- CAMERA MODAL -->
-    <div id="cameraModal" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
-      <div style="background:var(--ink-soft); border:1px solid var(--ink-line); border-radius:var(--radius); max-width:900px; width:100%; max-height:95vh; overflow:auto; position:relative;">
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--ink-line);">
-          <h3 style="font-family:'Fraunces',serif; font-size:17px; color:var(--text); margin:0;">📷 Camera Scanner</h3>
-          <button type="button" id="cameraClose" style="background:none; border:none; font-size:22px; color:var(--text-faint); cursor:pointer; padding:4px; line-height:1;">✕</button>
-        </div>
-        <div style="padding:20px;">
-          <div id="cameraStartView">
-            <div style="text-align:center; padding:40px 20px;">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--brass)" stroke-width="1.2" style="margin-bottom:16px;"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Allow camera access to scan documents directly</p>
-              <button type="button" id="cameraStart" class="submit-btn" style="width:auto; padding:12px 32px; margin-top:0;">Open Camera</button>
-            </div>
-          </div>
-          <div id="cameraLiveView" style="display:none;">
-            <div style="position:relative; display:inline-block; width:100%; max-width:100%; border-radius:var(--radius-sm); overflow:hidden; border:2px solid var(--ink-line);">
-              <video id="cameraVideo" autoplay playsinline style="display:block; width:100%; height:auto; background:#000;"></video>
-              <!-- Document overlay guide -->
-              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;">
-                <div style="width:75%; height:60%; border:2px dashed rgba(255,255,255,0.6); border-radius:8px; box-shadow:0 0 0 9999px rgba(0,0,0,0.35);"></div>
-              </div>
-              <div style="position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:12px; pointer-events:auto;">
-                <button type="button" id="cameraCapture" style="width:64px; height:64px; border-radius:50%; border:3px solid #fff; background:var(--stamp); cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.4); transition:transform 0.1s;">
-                  <div style="width:48px; height:48px; border-radius:50%; background:#fff; margin:0 auto;"></div>
-                </button>
-              </div>
-              <div style="position:absolute; top:10px; right:10px; display:flex; gap:8px;">
-                <button type="button" id="cameraFlip" style="background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.3); color:#fff; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; backdrop-filter:blur(4px);">🔄 Flip</button>
-              </div>
-            </div>
-            <p style="text-align:center; color:var(--text-faint); font-size:12px; margin-top:10px;">Align document within the guide frame and tap the shutter</p>
-          </div>
-          <div id="cameraReviewView" style="display:none;">
-            <div style="position:relative; display:inline-block; width:100%; border-radius:var(--radius-sm); overflow:hidden; border:2px solid var(--ink-line);">
-              <canvas id="cameraReviewCanvas" style="display:block; width:100%; height:auto;"></canvas>
-            </div>
-            <div style="display:flex; gap:10px; margin-top:16px; justify-content:center;">
-              <button type="button" id="cameraRetake" class="submit-btn" style="width:auto; padding:12px 24px; background:var(--ink-line); color:var(--text); box-shadow:none;">↺ Retake</button>
-              <button type="button" id="cameraUsePhoto" class="submit-btn" style="width:auto; padding:12px 24px;">✓ Use This Photo</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
   <footer>Files are processed on the server and removed automatically after closing the Tab</footer>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <script>
+/* =========================================================
+   DOC SCANNER  (premium)
+   - Multi-page capture/upload
+   - Crop, rotate, perspective correct, brightness/contrast/sharpness
+   - Quality filters (Magic Color, B&W, Grayscale, Enhanced, Sharpen, Original)
+   - Export as DOCX (with OCR) or PDF
+   ========================================================= */
+const Scan = (() => {
+  // State
+  const pages = [];           // { id, originalDataUrl, processedBlob, processedUrl, name, settings }
+  let currentIndex = -1;      // active page in stage
+  let cropper = null;
+  let cropperImg = null;
+  let cameraStream = null;
+  let cameraFacing = 'environment';
+  let previewDebounce = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  async function addPageFromFile(file) {
+    const url = await readFileAsDataURL(file);
+    const img = await loadImage(url);
+    const page = {
+      id: 'p' + Math.random().toString(36).slice(2, 9),
+      name: file.name || `capture_${pages.length + 1}.jpg`,
+      originalDataUrl: url,
+      originalWidth: img.naturalWidth,
+      originalHeight: img.naturalHeight,
+      processedBlob: null,
+      processedUrl: url,   // start by showing the original
+      settings: defaultSettings(),
+    };
+    pages.push(page);
+    currentIndex = pages.length - 1;
+    refreshAll();
+    rebuildStrip();
+    rebuildProcessButton();
+  }
+
+  function defaultSettings() {
+    return {
+      filter: 'magic_color',
+      brightness: 1.0,
+      contrast: 1.0,
+      sharpness: 1.0,
+      perspective: false,
+      rotate: 0,
+      crop: null,        // {x,y,w,h} in pixels of processed image
+      cropDirty: false,
+    };
+  }
+
+  function currentPage() { return pages[currentIndex] || null; }
+
+  function refreshAll() {
+    const p = currentPage();
+    if (!p) {
+      showEmptyStage();
+      $('scanCurrentPage').textContent = '0';
+      $('scanTotalPages').textContent = String(pages.length);
+      $('scanDimensionInfo').textContent = '';
+      return;
+    }
+    $('scanCurrentPage').textContent = String(currentIndex + 1);
+    $('scanTotalPages').textContent = String(pages.length);
+    $('scanDimensionInfo').textContent = `${p.originalWidth} × ${p.originalHeight}`;
+
+    // sync controls
+    const s = p.settings;
+    document.querySelectorAll('.filter-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.filter === s.filter);
+    });
+    $('scanBrightness').value = Math.round(s.brightness * 100);
+    $('scanBrightnessVal').textContent = Math.round(s.brightness * 100) + '%';
+    $('scanContrast').value = Math.round(s.contrast * 100);
+    $('scanContrastVal').textContent = Math.round(s.contrast * 100) + '%';
+    $('scanSharpness').value = Math.round(s.sharpness * 100);
+    $('scanSharpnessVal').textContent = Math.round(s.sharpness * 100) + '%';
+    $('scanPerspective').checked = !!s.perspective;
+
+    showProcessedInStage(p);
+    rebuildProcessButton();
+  }
+
+  function showEmptyStage() {
+    destroyCropper();
+    const wrap = $('stageCanvasWrap');
+    wrap.classList.add('empty');
+    wrap.innerHTML = `<div>
+      <div style="font-family:'Fraunces',serif; font-size:22px; color:var(--text-muted); margin-bottom:8px;">📄 No page loaded</div>
+      <div>Use <b>Capture</b> or <b>Upload</b> to add a scanned page.</div>
+    </div>`;
+  }
+
+  function showProcessedInStage(p) {
+    destroyCropper();
+    const wrap = $('stageCanvasWrap');
+    wrap.classList.remove('empty');
+    wrap.innerHTML = `<img id="stageImg" alt="page preview">`;
+    const img = wrap.querySelector('img');
+    img.src = p.processedUrl;
+    cropperImg = img;
+  }
+
+  function rebuildStrip() {
+    const strip = $('scanPagesStrip');
+    strip.innerHTML = '';
+    pages.forEach((p, idx) => {
+      const t = document.createElement('div');
+      t.className = 'scan-page-thumb' + (idx === currentIndex ? ' active' : '');
+      t.innerHTML = `
+        <img src="${p.processedUrl}" alt="page ${idx + 1}">
+        <span class="pg-no">${idx + 1}</span>
+        <button type="button" class="pg-del" aria-label="Remove page">✕</button>
+      `;
+      t.querySelector('img').onclick = () => { currentIndex = idx; refreshAll(); rebuildStrip(); };
+      t.querySelector('.pg-del').onclick = (e) => {
+        e.stopPropagation();
+        pages.splice(idx, 1);
+        if (currentIndex >= pages.length) currentIndex = pages.length - 1;
+        refreshAll();
+        rebuildStrip();
+      };
+      strip.appendChild(t);
+    });
+  }
+
+  function destroyCropper() {
+    if (cropper) {
+      try { cropper.destroy(); } catch (_) {}
+      cropper = null;
+    }
+  }
+
+  function rebuildProcessButton() {
+    const btn = $('scanBuildBtn');
+    btn.disabled = pages.length === 0;
+  }
+
+  // ─────────── Camera ───────────
+  async function openCamera() {
+    const modal = $('cameraModal');
+    modal.classList.add('open');
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: cameraFacing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      const video = $('cameraVideo');
+      video.srcObject = cameraStream;
+    } catch (err) {
+      alert('Camera unavailable: ' + err.message);
+      closeCamera();
+    }
+  }
+
+  function closeCamera() {
+    const modal = $('cameraModal');
+    modal.classList.remove('open');
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      cameraStream = null;
+    }
+  }
+
+  function captureFromCamera() {
+    const video = $('cameraVideo');
+    const canvas = $('cameraCanvas');
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    if (!w || !h) return;
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, w, h);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      addPageFromFile(file);
+      closeCamera();
+    }, 'image/jpeg', 0.92);
+  }
+
+  // ─────────── Filter chip selection ───────────
+  function bindFilterChips() {
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.onclick = () => {
+        const p = currentPage();
+        if (!p) return;
+        p.settings.filter = chip.dataset.filter;
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c === chip));
+      };
+    });
+  }
+
+  // ─────────── Sliders ───────────
+  function bindSliders() {
+    const wire = (inputId, valId, key) => {
+      const el = $(inputId);
+      el.oninput = () => {
+        const p = currentPage();
+        if (!p) return;
+        p.settings[key] = parseInt(el.value, 10) / 100;
+        $(valId).textContent = el.value + '%';
+      };
+    };
+    wire('scanBrightness', 'scanBrightnessVal', 'brightness');
+    wire('scanContrast',   'scanContrastVal',   'contrast');
+    wire('scanSharpness',  'scanSharpnessVal',  'sharpness');
+
+    $('scanPerspective').onchange = (e) => {
+      const p = currentPage();
+      if (!p) return;
+      p.settings.perspective = e.target.checked;
+    };
+  }
+
+  // ─────────── Rotate ───────────
+  function bindRotate() {
+    $('scanRotateL').onclick = () => rotateCurrent(-90);
+    $('scanRotateR').onclick = () => rotateCurrent(90);
+  }
+  function rotateCurrent(delta) {
+    const p = currentPage();
+    if (!p) return;
+    p.settings.rotate = ((p.settings.rotate || 0) + delta) % 360;
+  }
+
+  // ─────────── Crop ───────────
+  function bindCrop() {
+    const btn = $('scanCropBtn');
+    btn.onclick = () => {
+      const p = currentPage();
+      if (!p) {
+        alert('Add a page first (Capture or Upload).');
+        return;
+      }
+      if (cropper) {
+        applyCrop();
+      } else {
+        enterCropMode(p);
+        btn.textContent = 'Apply Crop';
+      }
+    };
+  }
+
+  function enterCropMode(p) {
+    // Re-show the original (pre-rotation) so the crop box maps to raw coords
+    // For simplicity we crop on the currently displayed (processed) image.
+    destroyCropper();
+    if (!cropperImg) return;
+    cropper = new Cropper(cropperImg, {
+      viewMode: 1,
+      autoCropArea: 0.92,
+      background: false,
+      responsive: true,
+      restore: false,
+      modal: true,
+      guides: true,
+      center: true,
+      highlight: false,
+      movable: true,
+      zoomable: true,
+      rotatable: false,
+      scalable: false,
+      ready() {
+        // nothing
+      },
+    });
+  }
+
+  async function applyCrop() {
+    if (!cropper) return;
+    const p = currentPage();
+    if (!p) return;
+    const data = cropper.getData(true); // natural coords
+    p.settings.crop = { x: Math.round(data.x), y: Math.round(data.y),
+                       w: Math.round(data.width), h: Math.round(data.height) };
+    p.settings.cropDirty = true;
+    destroyCropper();
+    const btn = $('scanCropBtn');
+    btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 002 2h14"/><path d="M2 6h14a2 2 0 012 2v14"/></svg> Crop`;
+    refreshAll();
+    rebuildStrip();
+  }
+
+  // ─────────── Reset ───────────
+  function bindReset() {
+    $('scanResetBtn').onclick = () => {
+      const p = currentPage();
+      if (!p) return;
+      p.settings = defaultSettings();
+      refreshAll();
+    };
+  }
+
+  // ─────────── Camera / Upload buttons ───────────
+  function bindCameraUpload() {
+    $('scanCameraBtn').onclick = openCamera;
+    $('scanUploadBtn').onclick = () => $('scanUploadInput').click();
+    $('scanUploadInput').onchange = async (e) => {
+      const files = Array.from(e.target.files || []);
+      for (const f of files) await addPageFromFile(f);
+      e.target.value = '';
+    };
+
+    $('cameraClose').onclick = closeCamera;
+    $('cameraCancel').onclick = closeCamera;
+    $('cameraShutter').onclick = captureFromCamera;
+    $('cameraSwitch').onclick = async () => {
+      cameraFacing = cameraFacing === 'environment' ? 'user' : 'environment';
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+      }
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: cameraFacing } },
+        audio: false,
+      });
+      $('cameraVideo').srcObject = cameraStream;
+    };
+  }
+
+  // ─────────── Build / Export ───────────
+  function bindBuild() {
+    $('scanBuildBtn').onclick = async () => {
+      if (pages.length === 0) {
+        setStatus('scanStatus', 'Add at least one scanned page first.', 'error');
+        return;
+      }
+      const btn = $('scanBuildBtn');
+      btn.disabled = true;
+      btn.classList.add('loading');
+      setStatus('scanStatus', 'Processing pages…', 'info');
+      try {
+        const processedBlobs = [];
+        for (let i = 0; i < pages.length; i++) {
+          currentIndex = i;
+          refreshAll();
+          const blob = await processPageOnServer(pages[i]);
+          processedBlobs.push(blob);
+        }
+        const fd = new FormData();
+        processedBlobs.forEach((b, i) => {
+          fd.append('files', new File([b], `page_${i + 1}.jpg`, { type: b.type || 'image/jpeg' }));
+        });
+        const fmt = $('scanOutputFmt').value;
+        fd.append('format', fmt);
+        fd.append('ocr', $('scanUseOcr').checked ? 'true' : 'false');
+        fd.append('ocr_lang', $('scanOcrLang').value);
+
+        const res = await fetch('/scan/build', { method: 'POST', body: fd });
+        if (!res.ok) {
+          let msg = `request failed (${res.status})`;
+          try { const j = await res.json(); msg = j.error || msg; } catch (_) {}
+          throw new Error(msg);
+        }
+        const outBlob = await res.blob();
+        const name = fmt === 'pdf' ? 'scanned.pdf' : 'scanned.docx';
+        const url = downloadBlob(outBlob, name);
+        renderTicket('scanStatus', {
+          filename: name,
+          sub: `${pages.length} page${pages.length > 1 ? 's' : ''} · ${fmtSize(outBlob.size)}`,
+          url,
+        });
+      } catch (e) {
+        setStatus('scanStatus', e.message, 'error');
+      }
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    };
+  }
+
+  async function processPageOnServer(page) {
+    const fd = new FormData();
+    // Send the *original* image; server applies rotate/perspective/crop/filter.
+    const origBlob = await (await fetch(page.originalDataUrl)).blob();
+    fd.append('file', new File([origBlob], page.name, { type: origBlob.type || 'image/jpeg' }));
+    fd.append('filter', page.settings.filter);
+    fd.append('perspective', page.settings.perspective ? 'true' : 'false');
+    fd.append('rotate', String(page.settings.rotate || 0));
+    fd.append('brightness', String(page.settings.brightness || 1));
+    fd.append('contrast', String(page.settings.contrast || 1));
+    fd.append('sharpness', String(page.settings.sharpness || 1));
+    if (page.settings.crop) {
+      fd.append('crop_x', String(page.settings.crop.x));
+      fd.append('crop_y', String(page.settings.crop.y));
+      fd.append('crop_w', String(page.settings.crop.w));
+      fd.append('crop_h', String(page.settings.crop.h));
+    }
+    const res = await fetch('/scan/process', { method: 'POST', body: fd });
+    if (!res.ok) {
+      let msg = `processing failed (${res.status})`;
+      try { const j = await res.json(); msg = j.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    // Update local preview
+    page.processedBlob = blob;
+    if (page.processedUrl) try { URL.revokeObjectURL(page.processedUrl); } catch (_) {}
+    page.processedUrl = URL.createObjectURL(blob);
+    return blob;
+  }
+
+  // ─────────── Init ───────────
+  function init() {
+    bindCameraUpload();
+    bindFilterChips();
+    bindSliders();
+    bindRotate();
+    bindCrop();
+    bindReset();
+    bindBuild();
+    showEmptyStage();
+  }
+
+  return { init, addPageFromFile };
+})();
+
+// Boot the scanner when the panel becomes available
+Scan.init();
+
 document.querySelectorAll('.tab').forEach(t => {
   t.onclick = () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
@@ -2197,520 +3108,6 @@ document.getElementById('downloadBtn').onclick = async () => {
   }
 
   buttons.forEach(b => { b.addEventListener('click', () => apply(b.dataset.theme)); });
-
-
-
-/* ═══════════════════════════════════════════════════════════
-   PREMIUM DOCX SCANNER JAVASCRIPT
-   Interactive crop editor, preview, quality controls
-   ═══════════════════════════════════════════════════════════ */
-
-(function initScanner() {
-  // Scanner state
-  const scannerState = {
-    file: null,
-    previewUrl: null,
-    corners: null,
-    originalSize: null,
-    cropRect: null,
-    isDragging: false,
-    dragCorner: -1,
-    canvas: null,
-    ctx: null,
-    img: null,
-    scale: 1
-  };
-
-  setupDropzone('scannerFile', 'scannerList', false);
-
-  // Override the scanner file handler to trigger preview
-  const origScannerOnChange = document.getElementById('scannerFile').onchange;
-  document.getElementById('scannerFile').addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      scannerState.file = files[0];
-      await loadScannerPreview(files[0]);
-    }
-  });
-
-  // Also handle drop
-  const scannerZone = document.querySelector('[data-input="scannerFile"]');
-  scannerZone.addEventListener('drop', async (e) => {
-    e.preventDefault();
-    scannerZone.classList.remove('dragover');
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      scannerState.file = files[0];
-      state.scannerList = [files[0]];
-      // Update file list display
-      const list = document.getElementById('scannerList');
-      list.innerHTML = `<div class="file-item"><span class="name">${escapeHtml(files[0].name)}</span><span class="meta">${fmtSize(files[0].size)}</span><span class="remove" data-i="0">✕</span></div>`;
-      list.querySelector('.remove').onclick = () => {
-        state.scannerList = [];
-        scannerState.file = null;
-        list.innerHTML = '';
-        document.getElementById('scannerPreviewArea').style.display = 'none';
-      };
-      await loadScannerPreview(files[0]);
-    }
-  });
-
-  async function loadScannerPreview(file) {
-    const previewArea = document.getElementById('scannerPreviewArea');
-    const previewImg = document.getElementById('scannerPreviewImg');
-    const canvas = document.getElementById('scannerOverlay');
-
-    setStatus('scannerStatus', 'Analyzing document...', 'info');
-
-    const fd = new FormData();
-    fd.append('file', file);
-
-    try {
-      const r = await fetch('/scan-preview', { method: 'POST', body: fd });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error(j.error || `Preview failed (${r.status})`);
-      }
-      const data = await r.json();
-
-      previewImg.src = data.preview;
-      scannerState.originalSize = data.original_size;
-      scannerState.corners = data.corners;
-      scannerState.previewUrl = data.preview;
-
-      previewImg.onload = () => {
-        initCropCanvas(data.corners);
-        previewArea.style.display = 'block';
-        setStatus('scannerStatus', 'Document detected! Adjust corners if needed, then click Scan.', 'info');
-      };
-    } catch (err) {
-      // Fallback: just show the image without auto-detect
-      const url = URL.createObjectURL(file);
-      previewImg.src = url;
-      scannerState.previewUrl = url;
-      scannerState.originalSize = null;
-      scannerState.corners = null;
-
-      previewImg.onload = () => {
-        initCropCanvas(null);
-        previewArea.style.display = 'block';
-        setStatus('scannerStatus', 'Preview loaded. Auto-detect failed — you can still crop manually or proceed.', 'info');
-      };
-    }
-  }
-
-  function initCropCanvas(corners) {
-    const canvas = document.getElementById('scannerOverlay');
-    const img = document.getElementById('scannerPreviewImg');
-    const wrap = document.getElementById('scannerCanvasWrap');
-
-    scannerState.canvas = canvas;
-    scannerState.img = img;
-    scannerState.ctx = canvas.getContext('2d');
-
-    // Set canvas size to match displayed image
-    const rect = img.getBoundingClientRect();
-    const wrapRect = wrap.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    scannerState.scale = rect.width / img.naturalWidth;
-
-    // Initialize corners (full image if none detected)
-    if (corners && corners.length === 4) {
-      scannerState.corners = corners.map(([x, y]) => ({
-        x: x * scannerState.scale,
-        y: y * scannerState.scale
-      }));
-    } else {
-      const w = canvas.width;
-      const h = canvas.height;
-      const margin = Math.min(w, h) * 0.1;
-      scannerState.corners = [
-        { x: margin, y: margin },
-        { x: w - margin, y: margin },
-        { x: w - margin, y: h - margin },
-        { x: margin, y: h - margin }
-      ];
-    }
-
-    drawCorners();
-    setupCanvasEvents();
-  }
-
-  function drawCorners() {
-    const ctx = scannerState.ctx;
-    const canvas = scannerState.canvas;
-    const corners = scannerState.corners;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw semi-transparent overlay outside polygon
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(canvas.width, 0);
-    ctx.lineTo(canvas.width, canvas.height);
-    ctx.lineTo(0, canvas.height);
-    ctx.closePath();
-
-    ctx.moveTo(corners[0].x, corners[0].y);
-    ctx.lineTo(corners[1].x, corners[1].y);
-    ctx.lineTo(corners[2].x, corners[2].y);
-    ctx.lineTo(corners[3].x, corners[3].y);
-    ctx.closePath();
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.fill('evenodd');
-    ctx.restore();
-
-    // Draw polygon border
-    ctx.beginPath();
-    ctx.moveTo(corners[0].x, corners[0].y);
-    for (let i = 1; i < corners.length; i++) {
-      ctx.lineTo(corners[i].x, corners[i].y);
-    }
-    ctx.closePath();
-    ctx.strokeStyle = '#C9A227';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Draw corner handles
-    corners.forEach((c, i) => {
-      ctx.beginPath();
-      ctx.arc(c.x, c.y, 8, 0, Math.PI * 2);
-      ctx.fillStyle = scannerState.dragCorner === i ? '#FF2E93' : '#00F0FF';
-      ctx.fill();
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Corner labels
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.shadowColor = 'rgba(0,0,0,0.8)';
-      ctx.shadowBlur = 4;
-      const labels = ['TL', 'TR', 'BR', 'BL'];
-      ctx.fillText(labels[i], c.x + 10, c.y - 10);
-      ctx.shadowBlur = 0;
-    });
-  }
-
-  function setupCanvasEvents() {
-    const canvas = scannerState.canvas;
-
-    canvas.onmousedown = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      // Find closest corner
-      let closest = -1;
-      let minDist = 20;
-      scannerState.corners.forEach((c, i) => {
-        const dist = Math.sqrt((x - c.x) ** 2 + (y - c.y) ** 2);
-        if (dist < minDist) {
-          minDist = dist;
-          closest = i;
-        }
-      });
-
-      if (closest >= 0) {
-        scannerState.isDragging = true;
-        scannerState.dragCorner = closest;
-        canvas.style.cursor = 'grabbing';
-      }
-    };
-
-    canvas.onmousemove = (e) => {
-      if (!scannerState.isDragging) {
-        // Hover effect
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        let hovering = false;
-        scannerState.corners.forEach(c => {
-          if (Math.sqrt((x - c.x) ** 2 + (y - c.y) ** 2) < 20) hovering = true;
-        });
-        canvas.style.cursor = hovering ? 'grab' : 'default';
-        return;
-      }
-
-      const rect = canvas.getBoundingClientRect();
-      const x = Math.max(0, Math.min(canvas.width, e.clientX - rect.left));
-      const y = Math.max(0, Math.min(canvas.height, e.clientY - rect.top));
-
-      scannerState.corners[scannerState.dragCorner] = { x, y };
-      drawCorners();
-    };
-
-    canvas.onmouseup = () => {
-      scannerState.isDragging = false;
-      scannerState.dragCorner = -1;
-      canvas.style.cursor = 'default';
-      updateCropRect();
-    };
-
-    canvas.onmouseleave = () => {
-      if (scannerState.isDragging) {
-        scannerState.isDragging = false;
-        scannerState.dragCorner = -1;
-        updateCropRect();
-      }
-    };
-
-    // Touch support
-    canvas.ontouchstart = (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
-
-      let closest = -1;
-      let minDist = 25;
-      scannerState.corners.forEach((c, i) => {
-        const dist = Math.sqrt((x - c.x) ** 2 + (y - c.y) ** 2);
-        if (dist < minDist) {
-          minDist = dist;
-          closest = i;
-        }
-      });
-
-      if (closest >= 0) {
-        scannerState.isDragging = true;
-        scannerState.dragCorner = closest;
-      }
-    };
-
-    canvas.ontouchmove = (e) => {
-      e.preventDefault();
-      if (!scannerState.isDragging) return;
-      const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      const x = Math.max(0, Math.min(canvas.width, touch.clientX - rect.left));
-      const y = Math.max(0, Math.min(canvas.height, touch.clientY - rect.top));
-      scannerState.corners[scannerState.dragCorner] = { x, y };
-      drawCorners();
-    };
-
-    canvas.ontouchend = () => {
-      scannerState.isDragging = false;
-      scannerState.dragCorner = -1;
-      updateCropRect();
-    };
-  }
-
-  function updateCropRect() {
-    if (!scannerState.originalSize || !scannerState.scale) return;
-
-    const corners = scannerState.corners;
-    const xs = corners.map(c => c.x / scannerState.scale);
-    const ys = corners.map(c => c.y / scannerState.scale);
-
-    const minX = Math.round(Math.min(...xs));
-    const minY = Math.round(Math.min(...ys));
-    const maxX = Math.round(Math.max(...xs));
-    const maxY = Math.round(Math.max(...ys));
-
-    scannerState.cropRect = {
-      x: Math.max(0, minX),
-      y: Math.max(0, minY),
-      w: Math.min(scannerState.originalSize.width - minX, maxX - minX),
-      h: Math.min(scannerState.originalSize.height - minY, maxY - minY)
-    };
-  }
-
-  // Auto-detect button
-  document.getElementById('scannerAutoDetect').addEventListener('click', async () => {
-    if (!scannerState.file) return;
-    setStatus('scannerStatus', 'Re-detecting document...', 'info');
-    await loadScannerPreview(scannerState.file);
-  });
-
-  // Reset crop button
-  document.getElementById('scannerResetCrop').addEventListener('click', () => {
-    if (!scannerState.canvas) return;
-    const w = scannerState.canvas.width;
-    const h = scannerState.canvas.height;
-    const margin = Math.min(w, h) * 0.05;
-    scannerState.corners = [
-      { x: margin, y: margin },
-      { x: w - margin, y: margin },
-      { x: w - margin, y: h - margin },
-      { x: margin, y: h - margin }
-    ];
-    scannerState.cropRect = null;
-    drawCorners();
-  });
-
-  // Range slider listeners
-  document.getElementById('scanBrightness').oninput = (e) => {
-    document.getElementById('scanBrightnessVal').textContent = e.target.value;
-  };
-  document.getElementById('scanContrast').oninput = (e) => {
-    document.getElementById('scanContrastVal').textContent = e.target.value;
-  };
-  document.getElementById('scanSharpness').oninput = (e) => {
-    document.getElementById('scanSharpnessVal').textContent = e.target.value;
-  };
-  document.getElementById('scanQuality').oninput = (e) => {
-    document.getElementById('scanQualityVal').textContent = e.target.value;
-  };
-
-  // Scan button handler
-  document.getElementById('scannerBtn').onclick = async () => {
-    const files = state.scannerList || [];
-    if (files.length !== 1) {
-      setStatus('scannerStatus', 'Select an image to scan', 'error');
-      return;
-    }
-
-    const fd = new FormData();
-    fd.append('file', files[0]);
-    fd.append('auto_detect', document.getElementById('scanAutoDetect').value);
-    fd.append('auto_deskew', document.getElementById('scanAutoDeskew').value);
-    fd.append('enhance_mode', document.getElementById('scanMode').value);
-    fd.append('brightness', document.getElementById('scanBrightness').value);
-    fd.append('contrast', document.getElementById('scanContrast').value);
-    fd.append('sharpness', document.getElementById('scanSharpness').value);
-    fd.append('output_format', document.getElementById('scanOutputFormat').value);
-    fd.append('quality', document.getElementById('scanQuality').value);
-
-    // Add crop rect if user adjusted corners
-    if (scannerState.cropRect) {
-      fd.append('crop_x', scannerState.cropRect.x);
-      fd.append('crop_y', scannerState.cropRect.y);
-      fd.append('crop_w', scannerState.cropRect.w);
-      fd.append('crop_h', scannerState.cropRect.h);
-    }
-
-    setLoading('scannerBtn', 'scannerStatus', true);
-    try {
-      const blob = await postForm('/scan', fd);
-      const fmt = document.getElementById('scanOutputFormat').value;
-      const base = files[0].name.replace(/\.[^.]+$/, '');
-      const ext = fmt === 'pdf' ? 'pdf' : fmt;
-      const name = `${base}_scanned.${ext}`;
-      const url = downloadBlob(blob, name);
-      const sub = fmt === 'pdf' ? 'Scanned to PDF · 300 DPI' : `Scanned to ${fmt.toUpperCase()}`;
-      renderTicket('scannerStatus', { filename: name, sub: `${sub} · ${fmtSize(blob.size)}`, url });
-    } catch (e) {
-      setStatus('scannerStatus', e.message, 'error');
-    }
-    setLoading('scannerBtn', 'scannerStatus', false);
-  };
-
-  // ═══════════════════════════════════════════════════════════
-  // CAMERA SCANNER
-  // ═══════════════════════════════════════════════════════════
-  const cameraModal = document.getElementById('cameraModal');
-  const cameraStartView = document.getElementById('cameraStartView');
-  const cameraLiveView = document.getElementById('cameraLiveView');
-  const cameraReviewView = document.getElementById('cameraReviewView');
-  const cameraVideo = document.getElementById('cameraVideo');
-  const cameraReviewCanvas = document.getElementById('cameraReviewCanvas');
-  let cameraStream = null;
-  let facingMode = 'environment'; // back camera by default for documents
-
-  document.getElementById('cameraBtn').onclick = () => {
-    cameraModal.style.display = 'flex';
-    cameraStartView.style.display = 'block';
-    cameraLiveView.style.display = 'none';
-    cameraReviewView.style.display = 'none';
-  };
-
-  document.getElementById('cameraClose').onclick = closeCamera;
-  cameraModal.onclick = (e) => { if (e.target === cameraModal) closeCamera(); };
-
-  function closeCamera() {
-    cameraModal.style.display = 'none';
-    stopCamera();
-  }
-
-  function stopCamera() {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(t => t.stop());
-      cameraStream = null;
-    }
-    cameraVideo.srcObject = null;
-  }
-
-  document.getElementById('cameraStart').onclick = async () => {
-    try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
-      });
-      cameraVideo.srcObject = cameraStream;
-      cameraStartView.style.display = 'none';
-      cameraLiveView.style.display = 'block';
-    } catch (err) {
-      alert('Could not access camera: ' + err.message);
-    }
-  };
-
-  document.getElementById('cameraFlip').onclick = async () => {
-    facingMode = facingMode === 'environment' ? 'user' : 'environment';
-    stopCamera();
-    try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
-      });
-      cameraVideo.srcObject = cameraStream;
-    } catch (err) {
-      alert('Could not flip camera: ' + err.message);
-    }
-  };
-
-  document.getElementById('cameraCapture').onclick = () => {
-    if (!cameraStream) return;
-    const video = cameraVideo;
-    const canvas = cameraReviewCanvas;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-
-    // If front camera, flip horizontally
-    if (facingMode === 'user') {
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-    }
-    ctx.drawImage(video, 0, 0);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-    cameraLiveView.style.display = 'none';
-    cameraReviewView.style.display = 'block';
-  };
-
-  document.getElementById('cameraRetake').onclick = () => {
-    cameraReviewView.style.display = 'none';
-    cameraLiveView.style.display = 'block';
-  };
-
-  document.getElementById('cameraUsePhoto').onclick = async () => {
-    const canvas = cameraReviewCanvas;
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.95));
-    const file = new File([blob], `camera_scan_${Date.now()}.jpg`, { type: 'image/jpeg' });
-
-    // Set as scanner file
-    state.scannerList = [file];
-    scannerState.file = file;
-
-    // Update file list
-    const list = document.getElementById('scannerList');
-    list.innerHTML = `<div class="file-item"><span class="name">${escapeHtml(file.name)}</span><span class="meta">${fmtSize(file.size)}</span><span class="remove" data-i="0">✕</span></div>`;
-    list.querySelector('.remove').onclick = () => {
-      state.scannerList = [];
-      scannerState.file = null;
-      list.innerHTML = '';
-      document.getElementById('scannerPreviewArea').style.display = 'none';
-    };
-
-    closeCamera();
-    await loadScannerPreview(file);
-  };
-})();
 
   let saved = 'light';
   try { saved = localStorage.getItem('pdf-toolbox-theme') || 'light'; } catch (e) {}
