@@ -1707,6 +1707,9 @@
           <input type="checkbox" id="scanUseOcr" checked>
           Run OCR (extract text into editable DOCX)
         </label>
+        <div id="scanOcrNote" style="display:none; font-size:11.5px; color:var(--text-faint); margin:-4px 0 8px 26px;">
+          OCR isn't available on this server — exports will still work, just without extracted text.
+        </div>
 
         <button type="button" class="submit-btn" id="scanBuildBtn"><span class="btn-label">Export Document</span><div class="btn-spinner"></div></button>
         <div class="status" id="scanStatus"></div>
@@ -2666,6 +2669,23 @@ const Scan = (() => {
     return blob;
   }
 
+  // ─────────── OCR availability ───────────
+  async function checkOcrAvailability() {
+    try {
+      const res = await fetch('/scan/health');
+      const data = await res.json();
+      if (!data.ocr_available) {
+        const cb = $('scanUseOcr');
+        cb.checked = false;
+        cb.disabled = true;
+        $('scanOcrNote').style.display = 'block';
+      }
+    } catch (e) {
+      // If the health check itself fails, leave the checkbox as-is —
+      // the build step will still gracefully fall back server-side.
+    }
+  }
+
   // ─────────── Init ───────────
   function init() {
     bindCameraUpload();
@@ -2676,9 +2696,10 @@ const Scan = (() => {
     bindReset();
     bindBuild();
     showEmptyStage();
+    checkOcrAvailability();
   }
 
-  return { init, addPageFromFile };
+  return { init, addPageFromFile, closeCamera };
 })();
 
 // Boot the scanner when the panel becomes available
@@ -2686,6 +2707,7 @@ Scan.init();
 
 document.querySelectorAll('.tab').forEach(t => {
   t.onclick = () => {
+    Scan.closeCamera();
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
@@ -2712,6 +2734,7 @@ document.querySelectorAll('.tool-card').forEach(card => {
 });
 
 document.getElementById('backToHome').addEventListener('click', () => {
+  Scan.closeCamera();
   document.getElementById('toolView').style.display = 'none';
   document.getElementById('homeView').style.display = 'block';
   document.getElementById('headerSub').textContent = 'ALL YOUR TOOLS IN ONE PLACE · CLICK ANY CARD TO START';
