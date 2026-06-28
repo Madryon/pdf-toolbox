@@ -1,416 +1,818 @@
-"""
-Doc Scanner backend module
-==========================
-Premium document scanner functions:
-- Auto edge detection & perspective correction
-- Quality filters (Original, B&W, Grayscale, Magic Color, Enhanced)
-- Manual crop with coordinates
-- Rotation
-- Brightness/contrast/sharpness adjustment
-- OCR text extraction (optional, when Tesseract is available)
-- Multi-page scan -> PDF -> DOCX
-"""
-
 import io
 import os
-import math
-import uuid
 import shutil
+import sys
+import uuid
 import zipfile
 from pathlib import Path
+from PIL import Image
+from pypdf import PdfReader, PdfWriter
+import pypdfium2 as pdfium
 
-import cv2
-import numpy as np
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
-
-# OCR is optional — only works if tesseract binary is installed
-try:
-    import pytesseract
-    TESSERACT_AVAILABLE = True
-except Exception:
-    pytesseract = None
-    TESSERACT_AVAILABLE = False
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif", ".gif"}
+PDF_EXTENSIONS = {".pdf"}
+VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".wmv", ".flv", ".webm", ".m4v", ".mpeg", ".mpg", ".3gp"}
 
 
-# ─────────────────────────────────────────────────────────────
-# Image helpers
-# ─────────────────────────────────────────────────────────────
-
-def _pil_to_cv(img):
-    """PIL RGB -> OpenCV BGR"""
-    rgb = np.array(img.convert("RGB"))
-    return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
-
-
-def _cv_to_pil(arr):
-    """OpenCV BGR -> PIL RGB"""
-    rgb = cv2.cvtColor(arr, cv2.COLOR_BGR2RGB)
-    return Image.fromarray(rgb)
+def _to_rgb(img):
+    if img.mode == "RGB":
+        return img
+    if img.mode in ("RGBA", "LA"):
+        bg = Image.new("RGB", img.size, (255, 255, 255))
+        bg.paste(img, mask=img.split()[-1])
+        return bg
+    return img.convert("RGB")
 
 
-def _load_image(path_or_bytes):
-    if isinstance(path_or_bytes, (bytes, bytearray)):
-        arr = np.frombuffer(path_or_bytes, dtype=np.uint8)
-        bgr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-    else:
-        bgr = cv2.imread(str(path_or_bytes), cv2.IMREAD_COLOR)
-    if bgr is None:
-        raise ValueError("could not decode image")
-    return bgr
-
-
-def _save_pil(img, path, fmt=None, quality=92):
-    if fmt is None:
-        fmt = Path(path).suffix.lstrip(".").upper() or "PNG"
-    fmt = fmt.upper()
-    if fmt in ("JPG", "JPEG"):
-        img = img.convert("RGB")
-        img.save(path, "JPEG", quality=quality, optimize=True)
-    elif fmt == "PNG":
-        img.save(path, "PNG", optimize=True)
-    elif fmt == "WEBP":
-        img.save(path, "WEBP", quality=quality, method=6)
-    else:
-        img.save(path, fmt)
-
-
-# ─────────────────────────────────────────────────────────────
-# Auto-edge detection + perspective correction (premium feature)
-# ─────────────────────────────────────────────────────────────
-
-def _order_points(pts):
-    """Order 4 points as TL, TR, BR, BL."""
-    rect = np.zeros((4, 2), dtype="float32")
-    s = pts.sum(axis=1)
-    rect[0] = pts[np.argmin(s)]      # top-left (smallest sum)
-    rect[2] = pts[np.argmax(s)]      # bottom-right (largest sum)
-    diff = np.diff(pts, axis=1)
-    rect[1] = pts[np.argmin(diff)]   # top-right (smallest diff)
-    rect[3] = pts[np.argmax(diff)]   # bottom-left (largest diff)
-    return rect
-
-
-def _four_point_transform(image, pts):
-    """Apply perspective warp given 4 points."""
-    rect = _order_points(pts)
-    (tl, tr, br, bl) = rect
-    width_a = np.linalg.norm(br - bl)
-    width_b = np.linalg.norm(tr - tl)
-    height_a = np.linalg.norm(tr - br)
-    height_b = np.linalg.norm(tl - bl)
-    max_w = int(max(width_a, width_b))
-    max_h = int(max(height_a, height_b))
-    dst = np.array([
-        [0, 0],
-        [max_w - 1, 0],
-        [max_w - 1, max_h - 1],
-        [0, max_h - 1]
-    ], dtype="float32")
-    M = cv2.getPerspectiveTransform(rect, dst)
-    warped = cv2.warpPerspective(image, M, (max_w, max_h))
-    return warped
-
-
-def _find_document_contour(image):
-    """Find the most-likely document quadrilateral in an image."""
-    h, w = image.shape[:2]
-    # resize for faster processing
-    scale = 800.0 / max(h, w) if max(h, w) > 800 else 1.0
-    if scale < 1.0:
-        small = cv2.resize(image, None, fx=scale, fy=scale)
-    else:
-        small = image
-
-    gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(blurred, 50, 150)
-    edges = cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=1)
-
-    contours, _ = cv2.findContours(edges.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:8]
-
-    doc = None
-    img_area = small.shape[0] * small.shape[1]
-    for c in contours:
-        if cv2.contourArea(c) < img_area * 0.15:
-            continue
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-        if len(approx) == 4:
-            doc = approx.reshape(4, 2) / scale
-            break
-
-    if doc is None:
-        # fallback: use the whole image
-        doc = np.array([[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]], dtype="float32")
-    return doc
-
-
-def auto_perspective_correct(image_bgr):
-    """Detect document edges and apply perspective correction."""
-    try:
-        pts = _find_document_contour(image_bgr)
-        return _four_point_transform(image_bgr, pts)
-    except Exception:
-        return image_bgr
-
-
-# ─────────────────────────────────────────────────────────────
-# Filters / enhancements
-# ─────────────────────────────────────────────────────────────
-
-def apply_filter(image_bgr, filter_name="magic_color", brightness=1.0,
-                 contrast=1.0, sharpness=1.0):
-    """
-    Apply a named filter. Returns BGR numpy array.
-
-    filter_name ∈ {original, bw, grayscale, magic_color, enhanced, sharpen}
-    """
-    img = image_bgr
-
-    if filter_name == "bw":
-        # Adaptive threshold (best for documents)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        # light denoise first
-        gray = cv2.bilateralFilter(gray, 9, 75, 75)
-        thr = cv2.adaptiveThreshold(
-            gray, 255,
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY,
-            31, 15
-        )
-        img = cv2.cvtColor(thr, cv2.COLOR_GRAY2BGR)
-
-    elif filter_name == "grayscale":
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-
-    elif filter_name == "magic_color":
-        # Adobe-style Magic Color: punchy contrast, light denoise, mild saturation
-        pil = _cv_to_pil(img)
-        # 1) light denoise
-        pil = pil.filter(ImageFilter.SMOOTH)
-        # 2) bump contrast
-        pil = ImageEnhance.Contrast(pil).enhance(1.45)
-        # 3) boost saturation a touch
-        pil = ImageEnhance.Color(pil).enhance(1.18)
-        # 4) white balance toward bright background
-        pil = ImageEnhance.Brightness(pil).enhance(1.08)
-        img = _pil_to_cv(pil)
-        # 5) sharpen
-        kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float32)
-        img = cv2.filter2D(img, -1, kernel)
-
-    elif filter_name == "enhanced":
-        # Generic "enhanced" — clarity boost without going monochrome
-        pil = _cv_to_pil(img)
-        pil = ImageEnhance.Contrast(pil).enhance(1.25)
-        pil = ImageEnhance.Sharpness(pil).enhance(1.6)
-        pil = ImageEnhance.Color(pil).enhance(1.05)
-        img = _pil_to_cv(pil)
-
-    elif filter_name == "sharpen":
-        kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float32)
-        img = cv2.filter2D(img, -1, kernel)
-
-    # else "original": no-op
-
-    # Per-knob adjustments on top of filter
-    if brightness != 1.0 or contrast != 1.0 or sharpness != 1.0:
-        pil = _cv_to_pil(img)
-        if brightness != 1.0:
-            pil = ImageEnhance.Brightness(pil).enhance(brightness)
-        if contrast != 1.0:
-            pil = ImageEnhance.Contrast(pil).enhance(contrast)
-        if sharpness != 1.0:
-            pil = ImageEnhance.Sharpness(pil).enhance(sharpness)
-        img = _pil_to_cv(pil)
-
+def _resize(img, max_dimension):
+    if max_dimension and (img.width > max_dimension or img.height > max_dimension):
+        img.thumbnail((max_dimension, max_dimension), Image.LANCZOS)
     return img
 
 
-# ─────────────────────────────────────────────────────────────
-# Crop / rotate
-# ─────────────────────────────────────────────────────────────
-
-def crop_image(image_bgr, x, y, w, h):
-    """Crop by pixel rectangle. Returns BGR."""
-    H, W = image_bgr.shape[:2]
-    x = max(0, int(x)); y = max(0, int(y))
-    w = min(int(w), W - x); h = min(int(h), H - y)
-    if w <= 0 or h <= 0:
-        return image_bgr
-    return image_bgr[y:y + h, x:x + w].copy()
-
-
-def rotate_image(image_bgr, angle):
-    """Rotate around center, expanding canvas to fit. Returns BGR."""
-    if not angle:
-        return image_bgr
-    angle = float(angle) % 360
-    h, w = image_bgr.shape[:2]
-    M = cv2.getRotationMatrix2D((w / 2, h / 2), angle, 1.0)
-    cos = abs(M[0, 0]); sin = abs(M[0, 1])
-    nw = int(h * sin + w * cos)
-    nh = int(h * cos + w * sin)
-    M[0, 2] += nw / 2 - w / 2
-    M[1, 2] += nh / 2 - h / 2
-    return cv2.warpAffine(image_bgr, M, (nw, nh),
-                          flags=cv2.INTER_CUBIC,
-                          borderMode=cv2.BORDER_REPLICATE)
-
-
-# ─────────────────────────────────────────────────────────────
-# Pipeline: apply all settings in one shot
-# ─────────────────────────────────────────────────────────────
-
-def process_scan(input_path, output_path,
-                 perspective=False,
-                 filter_name="magic_color",
-                 brightness=1.0, contrast=1.0, sharpness=1.0,
-                 rotate=0,
-                 crop=None):
-    """
-    Full scan pipeline.
-    crop: dict {x,y,w,h} in original-image pixels or None
-    """
-    img = _load_image(input_path)
-
-    # 1) rotate first (cheap)
-    if rotate:
-        img = rotate_image(img, rotate)
-
-    # 2) perspective correct (if requested)
-    if perspective:
-        img = auto_perspective_correct(img)
-
-    # 3) crop
-    if crop:
-        img = crop_image(img, crop["x"], crop["y"], crop["w"], crop["h"])
-
-    # 4) filter + tweaks
-    img = apply_filter(img,
-                       filter_name=filter_name,
-                       brightness=brightness,
-                       contrast=contrast,
-                       sharpness=sharpness)
-
-    # 5) write
-    out_dir = Path(output_path).parent
-    out_dir.mkdir(parents=True, exist_ok=True)
-    fmt = Path(output_path).suffix.lstrip(".").lower() or "jpg"
-    if fmt in ("jpg", "jpeg"):
-        cv2.imwrite(str(output_path), img,
-                    [cv2.IMWRITE_JPEG_QUALITY, 92])
-    elif fmt == "png":
-        cv2.imwrite(str(output_path), img)
-    elif fmt == "webp":
-        cv2.imwrite(str(output_path), img,
-                    [cv2.IMWRITE_WEBP_QUALITY, 92])
+def _save_image(img, output_path, quality=60, fmt=None):
+    if fmt is None:
+        fmt = Path(output_path).suffix.lstrip(".").upper() or "PNG"
+    fmt = fmt.upper()
+    if fmt in ("JPG", "JPEG"):
+        img = _to_rgb(img)
+        img.save(output_path, "JPEG", quality=quality, optimize=True, progressive=True)
+    elif fmt == "PNG":
+        img.save(output_path, "PNG", optimize=True)
+    elif fmt == "WEBP":
+        img.save(output_path, "WEBP", quality=quality, method=6)
+    elif fmt == "TIFF":
+        img.save(output_path, "TIFF", compression="tiff_lzw")
     else:
-        cv2.imwrite(str(output_path), img)
-    return output_path
+        if fmt in ("BMP",):
+            img = _to_rgb(img)
+        img.save(output_path, fmt, optimize=True)
 
 
-# ─────────────────────────────────────────────────────────────
-# OCR (optional)
-# ─────────────────────────────────────────────────────────────
-
-def ocr_image(image_path, lang="eng"):
-    """Run OCR on a single image. Returns extracted text (may be empty)."""
-    if not TESSERACT_AVAILABLE:
-        return ""
-    try:
-        return pytesseract.image_to_string(str(image_path), lang=lang) or ""
-    except Exception:
-        return ""
-
-
-def ocr_available():
-    return TESSERACT_AVAILABLE
-
-
-# ─────────────────────────────────────────────────────────────
-# Multi-page scan -> PDF / DOCX
-# ─────────────────────────────────────────────────────────────
-
-def images_to_pdf_simple(image_paths, output_path):
-    """Just stitch images into a PDF (no OCR)."""
-    imgs = []
-    for p in image_paths:
-        im = Image.open(p)
-        im.load()
-        if im.mode != "RGB":
-            im = im.convert("RGB")
-        imgs.append(im)
-    if not imgs:
-        raise ValueError("no images provided")
-    first, *rest = imgs
-    first.save(str(output_path), "PDF",
-               save_all=True, append_images=rest, resolution=200.0)
-    return output_path
-
-
-def images_to_docx(image_paths, output_path, ocr_lang="eng", use_ocr=True):
-    """
-    Pipeline:
-      1) Build a PDF from the processed images.
-      2) If OCR is enabled and tesseract is available, build a docx from the OCR text
-         (one section per page, text + page heading). Otherwise, convert PDF -> docx
-         using pdf2docx (image-only pages still get a working .docx).
-    """
-    # Step 1: build PDF
-    tmp_pdf = str(output_path) + ".intermediate.pdf"
-    images_to_pdf_simple(image_paths, tmp_pdf)
-
-    if use_ocr and TESSERACT_AVAILABLE:
-        # Build a real text docx with OCR'd content per page
-        from docx import Document
-        from docx.shared import Pt, Inches
-        doc = Document()
-        # Page-size A4
-        for sec in doc.sections:
-            sec.top_margin = Inches(0.7)
-            sec.bottom_margin = Inches(0.7)
-            sec.left_margin = Inches(0.7)
-            sec.right_margin = Inches(0.7)
-
-        for idx, p in enumerate(image_paths, start=1):
-            heading = doc.add_paragraph()
-            run = heading.add_run(f"Page {idx}")
-            run.bold = True
-            run.font.size = Pt(14)
-
-            text = ocr_image(p, lang=ocr_lang) or ""
-            if text.strip():
-                for line in text.splitlines():
-                    para = doc.add_paragraph()
-                    r = para.add_run(line)
-                    r.font.size = Pt(11)
-            else:
-                note = doc.add_paragraph()
-                nr = note.add_run("(no text recognized on this page)")
-                nr.italic = True
-                nr.font.size = Pt(10)
-
-            # Page break between pages (not after the last one)
-            if idx < len(image_paths):
-                doc.add_page_break()
-
-        doc.save(str(output_path))
-    else:
-        # Fallback: PDF -> DOCX (image-based, still a valid docx)
-        from pdf2docx import Converter
-        cv = Converter(tmp_pdf)
+def merge_pdfs(input_paths, output_path):
+    pdf_paths = []
+    image_paths = []
+    for path in input_paths:
+        ext = Path(path).suffix.lower()
+        if ext in IMAGE_EXTENSIONS:
+            image_paths.append(path)
+        elif ext in PDF_EXTENSIONS:
+            pdf_paths.append(path)
+        else:
+            raise ValueError(f"unsupported input file: {path}")
+    writer = PdfWriter()
+    if image_paths:
+        tmp = output_path + f".imgs_{uuid.uuid4().hex}.pdf"
         try:
-            cv.convert(str(output_path))
+            images_to_pdf(image_paths, tmp)
+            for page in PdfReader(tmp).pages:
+                writer.add_page(page)
         finally:
-            cv.close()
-
-    # cleanup intermediate pdf
-    try:
-        os.remove(tmp_pdf)
-    except OSError:
-        pass
-
+            if os.path.exists(tmp):
+                os.remove(tmp)
+    for path in pdf_paths:
+        reader = PdfReader(path)
+        if reader.is_encrypted:
+            try:
+                reader.decrypt("")
+            except Exception:
+                raise ValueError(f"encrypted PDF not supported: {path}")
+        for page in reader.pages:
+            writer.add_page(page)
+    with open(output_path, "wb") as f:
+        writer.write(f)
     return output_path
+
+
+def images_to_pdf(input_paths, output_path):
+    images = []
+    for p in input_paths:
+        img = Image.open(p)
+        img.load()
+        img = _to_rgb(img)
+        images.append(img)
+    if not images:
+        raise ValueError("no images provided")
+    first, *rest = images
+    first.save(output_path, "PDF", save_all=True, append_images=rest, resolution=150.0)
+    return output_path
+
+
+def pdf_to_images(input_path, output_dir, fmt="png", dpi=150, quality=85):
+    pdf = pdfium.PdfDocument(input_path)
+    scale = dpi / 72
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for i in range(len(pdf)):
+        page = pdf[i]
+        bitmap = page.render(scale=scale)
+        pil_image = bitmap.to_pil()
+        out_path = output_dir / f"page_{i + 1:04d}.{fmt}"
+        _save_image(pil_image, str(out_path), quality=quality, fmt=fmt)
+        paths.append(str(out_path))
+    return paths
+
+
+def compress_image(input_path, output_path, quality=60, max_dimension=None):
+    img = Image.open(input_path)
+    img.load()
+    img = _resize(img, max_dimension)
+    _save_image(img, output_path, quality=quality)
+    return output_path
+
+
+def compress_pdf(input_path, output_path, quality=60, max_dimension=1600, dpi=120, mode="auto"):
+    if mode == "rasterize":
+        return _compress_pdf_rasterize(input_path, output_path, quality, max_dimension, dpi)
+    if mode == "native":
+        return _compress_pdf_native(input_path, output_path, quality, max_dimension)
+    try:
+        return _compress_pdf_native(input_path, output_path, quality, max_dimension)
+    except Exception:
+        return _compress_pdf_rasterize(input_path, output_path, quality, max_dimension, dpi)
+
+
+def _compress_pdf_native(input_path, output_path, quality=60, max_dimension=1600):
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported")
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+    for page in writer.pages:
+        try:
+            for img in page.images:
+                try:
+                    pil_img = img.image
+                    pil_img = _to_rgb(pil_img)
+                    pil_img = _resize(pil_img, max_dimension)
+                    img.replace(pil_img, quality=quality)
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        try:
+            page.compress_content_streams()
+        except Exception:
+            pass
+        try:
+            for fn in page.inline_images:
+                pass
+        except Exception:
+            pass
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+
+def _compress_pdf_rasterize(input_path, output_path, quality=60, max_dimension=1600, dpi=120):
+    pdf = pdfium.PdfDocument(input_path)
+    scale = dpi / 72
+    images = []
+    for i in range(len(pdf)):
+        page = pdf[i]
+        bitmap = page.render(scale=scale)
+        pil_image = bitmap.to_pil()
+        pil_image = _to_rgb(pil_image)
+        pil_image = _resize(pil_image, max_dimension)
+        images.append(pil_image)
+    if not images:
+        raise ValueError("PDF has no pages")
+    first, *rest = images
+    tmp_img_dir = output_path + f".imgs_{uuid.uuid4().hex}"
+    try:
+        Path(tmp_img_dir).mkdir(parents=True, exist_ok=True)
+        tmp_paths = []
+        for idx, im in enumerate(images, start=1):
+            tp = os.path.join(tmp_img_dir, f"p_{idx:04d}.jpg")
+            _save_image(im, tp, quality=quality, fmt="jpg")
+            tmp_paths.append(tp)
+        imgs = [Image.open(p) for p in tmp_paths]
+        imgs[0].save(output_path, "PDF", save_all=True, append_images=imgs[1:], resolution=72.0)
+    finally:
+        shutil.rmtree(tmp_img_dir, ignore_errors=True)
+    return output_path
+
+
+def convert_image(input_path, output_path, quality=90):
+    img = Image.open(input_path)
+    img.load()
+    _save_image(img, output_path, quality=quality)
+    return output_path
+
+
+def convert_file(input_path, output_path, quality=85, dpi=150):
+    in_ext = Path(input_path).suffix.lower()
+    out_ext = Path(output_path).suffix.lower()
+    out_path = Path(output_path)
+    if in_ext == ".pdf" and out_ext in IMAGE_EXTENSIONS:
+        out_dir = out_path.parent if str(out_path.parent) else Path(".")
+        fmt = out_ext.lstrip(".")
+        paths = pdf_to_images(input_path, str(out_dir), fmt=fmt, dpi=dpi, quality=quality)
+        if len(paths) == 1:
+            os.replace(paths[0], output_path)
+            return [output_path]
+        return paths
+    if in_ext in IMAGE_EXTENSIONS and out_ext == ".pdf":
+        images_to_pdf([input_path], output_path)
+        return [output_path]
+    if in_ext in IMAGE_EXTENSIONS and out_ext in IMAGE_EXTENSIONS:
+        convert_image(input_path, output_path, quality=quality)
+        return [output_path]
+    raise ValueError(f"unsupported conversion: {in_ext} -> {out_ext}")
+
+
+def pdf_to_word(input_path, output_path):
+    from pdf2docx import Converter
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported")
+    cv = Converter(input_path)
+    try:
+        cv.convert(output_path)
+    finally:
+        cv.close()
+    return output_path
+
+
+# ─────────────────────────────────────────────────────────────
+# NEW: Split PDF functions
+# ─────────────────────────────────────────────────────────────
+
+def split_pdf_by_pages(input_path, output_dir, page_ranges):
+    """
+    Split a PDF by specific page ranges.
+    page_ranges: list of tuples like [(1,3), (4,7), (8,10)] or [(1,3), (4,None)]
+    Returns list of output paths.
+    """
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported")
+
+    total_pages = len(reader.pages)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    paths = []
+    for idx, (start, end) in enumerate(page_ranges, start=1):
+        # Convert to 0-based indexing
+        start_idx = max(0, start - 1)
+        if end is None or end > total_pages:
+            end_idx = total_pages
+        else:
+            end_idx = end
+
+        if start_idx >= end_idx:
+            continue
+
+        writer = PdfWriter()
+        for i in range(start_idx, end_idx):
+            writer.add_page(reader.pages[i])
+
+        out_path = output_dir / f"split_{idx:03d}_pages_{start}-{end if end else 'end'}.pdf"
+        with open(out_path, "wb") as f:
+            writer.write(f)
+        paths.append(str(out_path))
+
+    return paths
+
+
+def split_pdf_by_chunks(input_path, output_dir, pages_per_chunk):
+    """
+    Split a PDF into chunks of N pages each.
+    Returns list of output paths.
+    """
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported")
+
+    total_pages = len(reader.pages)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    paths = []
+    chunk_num = 1
+    for start in range(0, total_pages, pages_per_chunk):
+        end = min(start + pages_per_chunk, total_pages)
+        writer = PdfWriter()
+        for i in range(start, end):
+            writer.add_page(reader.pages[i])
+
+        out_path = output_dir / f"split_{chunk_num:03d}_pages_{start+1}-{end}.pdf"
+        with open(out_path, "wb") as f:
+            writer.write(f)
+        paths.append(str(out_path))
+        chunk_num += 1
+
+    return paths
+
+
+# ─────────────────────────────────────────────────────────────
+# NEW: Video to Images / PDF functions
+# ─────────────────────────────────────────────────────────────
+
+def video_to_frames(input_path, output_dir, fmt="png", quality=85, max_frames=None, fps=None):
+    """
+    Extract frames from a video file.
+
+    Args:
+        input_path: path to video file
+        output_dir: directory to save frames
+        fmt: output image format (png, jpg, webp)
+        quality: image quality for lossy formats
+        max_frames: maximum number of frames to extract (None = all)
+        fps: extract at this FPS (None = original video FPS, i.e. every frame)
+
+    Returns:
+        list of output file paths
+    """
+    import cv2
+
+    cap = cv2.VideoCapture(input_path)
+    if not cap.isOpened():
+        raise ValueError(f"Could not open video: {input_path}")
+
+    video_fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    paths = []
+    frame_count = 0
+    saved_count = 0
+
+    # Calculate frame skip interval
+    if fps and fps > 0 and video_fps > 0:
+        skip_interval = max(1, int(round(video_fps / fps)))
+    else:
+        skip_interval = 1
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if frame_count % skip_interval == 0:
+            # Convert BGR to RGB
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(rgb_frame)
+
+            out_path = output_dir / f"frame_{saved_count + 1:04d}.{fmt}"
+            _save_image(pil_image, str(out_path), quality=quality, fmt=fmt)
+            paths.append(str(out_path))
+            saved_count += 1
+
+            if max_frames and saved_count >= max_frames:
+                break
+
+        frame_count += 1
+
+    cap.release()
+    return paths
+
+
+def video_to_pdf(input_path, output_path, quality=75, max_frames=None, fps=None, max_dimension=None):
+    """
+    Convert video frames to a single PDF.
+
+    Args:
+        input_path: path to video file
+        output_path: path for output PDF
+        quality: JPEG quality for frames in PDF
+        max_frames: maximum frames to include
+        fps: target FPS for extraction
+        max_dimension: resize frames if larger than this
+    """
+    import cv2
+
+    cap = cv2.VideoCapture(input_path)
+    if not cap.isOpened():
+        raise ValueError(f"Could not open video: {input_path}")
+
+    video_fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    images = []
+    frame_count = 0
+    saved_count = 0
+
+    if fps and fps > 0 and video_fps > 0:
+        skip_interval = max(1, int(round(video_fps / fps)))
+    else:
+        skip_interval = 1
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if frame_count % skip_interval == 0:
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(rgb_frame)
+            pil_image = _to_rgb(pil_image)
+            if max_dimension:
+                pil_image = _resize(pil_image, max_dimension)
+            images.append(pil_image)
+            saved_count += 1
+
+            if max_frames and saved_count >= max_frames:
+                break
+
+        frame_count += 1
+
+    cap.release()
+
+    if not images:
+        raise ValueError("No frames could be extracted from video")
+
+    # Save as PDF with JPEG compression for smaller file size
+    first, *rest = images
+    first.save(output_path, "PDF", save_all=True, append_images=rest, resolution=72.0, quality=quality)
+    return output_path
+
+
+
+
+def add_text_watermark(input_path, output_path, text="CONFIDENTIAL", font_size=60, opacity=0.3, color=(128,128,128), angle=45, spacing=200):
+    """
+    Add text watermark to every page of a PDF.
+
+    Args:
+        input_path: path to input PDF
+        output_path: path for output PDF
+        text: watermark text
+        font_size: font size in points
+        opacity: opacity 0.0-1.0
+        color: RGB tuple (r,g,b)
+        angle: rotation angle in degrees
+        spacing: spacing between watermarks
+    """
+    from pypdf import PdfReader, PdfWriter
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.units import inch
+    import io
+
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported - unlock first")
+
+    writer = PdfWriter()
+
+    # Create watermark PDF page
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+    can.setFont("Helvetica-Bold", font_size)
+
+    r, g, b = color
+    can.setFillColorRGB(r/255, g/255, b/255, alpha=opacity)
+    can.setStrokeColorRGB(r/255, g/255, b/255, alpha=opacity)
+
+    # Draw text multiple times across page
+    page_width, page_height = letter
+    can.saveState()
+    can.translate(page_width/2, page_height/2)
+    can.rotate(angle)
+
+    # Draw text in grid pattern
+    for x in range(-int(page_width), int(page_width)+1, spacing):
+        for y in range(-int(page_height), int(page_height)+1, spacing):
+            can.drawString(x, y, text)
+
+    can.restoreState()
+    can.save()
+    packet.seek(0)
+
+    watermark_pdf = PdfReader(packet)
+    watermark_page = watermark_pdf.pages[0]
+
+    # Apply watermark to each page
+    for page in reader.pages:
+        page.merge_page(watermark_page, over=True)
+        writer.add_page(page)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+
+def add_image_watermark(input_path, output_path, image_path, opacity=0.3, position="center", scale=0.3):
+    """
+    Add image watermark to every page of a PDF.
+
+    Args:
+        input_path: path to input PDF
+        output_path: path for output PDF
+        image_path: path to watermark image (PNG with transparency preferred)
+        opacity: opacity 0.0-1.0
+        position: "center", "top-left", "top-right", "bottom-left", "bottom-right", "tile"
+        scale: scale factor relative to page width
+    """
+    from pypdf import PdfReader, PdfWriter
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    from PIL import Image
+    import io
+
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported - unlock first")
+
+    writer = PdfWriter()
+
+    # Get image dimensions
+    img = Image.open(image_path)
+    img_w, img_h = img.size
+
+    # Create watermark PDF
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+    page_width, page_height = letter
+
+    # Calculate size
+    target_width = page_width * scale
+    target_height = (img_h / img_w) * target_width
+
+    # Position
+    if position == "center":
+        x = (page_width - target_width) / 2
+        y = (page_height - target_height) / 2
+    elif position == "top-left":
+        x, y = 20, page_height - target_height - 20
+    elif position == "top-right":
+        x, y = page_width - target_width - 20, page_height - target_height - 20
+    elif position == "bottom-left":
+        x, y = 20, 20
+    elif position == "bottom-right":
+        x, y = page_width - target_width - 20, 20
+    else:
+        x = (page_width - target_width) / 2
+        y = (page_height - target_height) / 2
+
+    can.setFillAlpha(opacity)
+    can.drawImage(image_path, x, y, width=target_width, height=target_height, mask="auto")
+    can.save()
+    packet.seek(0)
+
+    watermark_pdf = PdfReader(packet)
+    watermark_page = watermark_pdf.pages[0]
+
+    for page in reader.pages:
+        page.merge_page(watermark_page, over=True)
+        writer.add_page(page)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+
+def lock_pdf(input_path, output_path, user_password="", owner_password="", 
+             allow_printing=True, allow_copying=True, allow_modifying=False, 
+             allow_annotating=False, allow_form_filling=False):
+    """
+    Encrypt and password-protect a PDF with security settings.
+
+    Args:
+        input_path: path to input PDF
+        output_path: path for output PDF
+        user_password: password required to open PDF (empty = no open password)
+        owner_password: password for permissions (if empty, uses user_password)
+        allow_printing: allow printing
+        allow_copying: allow copying text/images
+        allow_modifying: allow modifying content
+        allow_annotating: allow adding annotations
+        allow_form_filling: allow filling forms
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(input_path)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            raise ValueError("encrypted PDF not supported - unlock first")
+
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+
+    # Build permissions
+    permissions = 0
+    if allow_printing:
+        permissions |= 1 << 2  # Print
+    if allow_modifying:
+        permissions |= 1 << 3  # Modify
+    if allow_copying:
+        permissions |= 1 << 4  # Copy
+    if allow_annotating:
+        permissions |= 1 << 5  # Annotate
+    if allow_form_filling:
+        permissions |= 1 << 8  # Fill forms
+
+    # Encrypt
+    owner = owner_password if owner_password else user_password
+    writer.encrypt(
+        user_password=user_password,
+        owner_password=owner,
+        use_128bit=True,
+        permissions=permissions
+    )
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+
+def unlock_pdf(input_path, output_path, password=""):
+    """
+    Remove password and encryption from a PDF.
+
+    Args:
+        input_path: path to encrypted PDF
+        output_path: path for output decrypted PDF
+        password: password to decrypt (try empty first)
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(input_path)
+
+    if not reader.is_encrypted:
+        # Not encrypted, just copy
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        with open(output_path, "wb") as f:
+            writer.write(f)
+        return output_path
+
+    # Try to decrypt
+    decrypted = False
+    if password:
+        try:
+            reader.decrypt(password)
+            decrypted = True
+        except Exception:
+            pass
+
+    if not decrypted:
+        try:
+            reader.decrypt("")
+            decrypted = True
+        except Exception:
+            pass
+
+    if not decrypted:
+        raise ValueError("Could not decrypt PDF - wrong password or unsupported encryption")
+
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+    return output_path
+
+
+def make_zip(paths_or_dir, zip_path):
+    paths = []
+    if isinstance(paths_or_dir, (list, tuple)):
+        paths = list(paths_or_dir)
+    else:
+        p = Path(paths_or_dir)
+        if p.is_dir():
+            paths = sorted([str(x) for x in p.iterdir() if x.is_file()])
+        else:
+            paths = [str(p)]
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+        for fp in paths:
+            z.write(fp, Path(fp).name)
+    return zip_path
+
+
+def build_parser():
+    import argparse
+    parser = argparse.ArgumentParser(description="PDF merger, compressor and file converter")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    merge_parser = subparsers.add_parser("merge")
+    merge_parser.add_argument("inputs", nargs="+")
+    merge_parser.add_argument("-o", "--output", required=True)
+    compress_parser = subparsers.add_parser("compress")
+    compress_parser.add_argument("input")
+    compress_parser.add_argument("-o", "--output", required=True)
+    compress_parser.add_argument("-q", "--quality", type=int, default=60)
+    compress_parser.add_argument("-m", "--max-dimension", type=int, default=1600)
+    compress_parser.add_argument("--dpi", type=int, default=120)
+    compress_parser.add_argument("--mode", choices=["auto", "native", "rasterize"], default="auto")
+    convert_parser = subparsers.add_parser("convert")
+    convert_parser.add_argument("input")
+    convert_parser.add_argument("-o", "--output", required=True)
+    convert_parser.add_argument("-q", "--quality", type=int, default=85)
+    convert_parser.add_argument("--dpi", type=int, default=150)
+    word_parser = subparsers.add_parser("pdf-to-word")
+    word_parser.add_argument("input")
+    word_parser.add_argument("-o", "--output", required=True)
+
+    # NEW CLI parsers
+    split_parser = subparsers.add_parser("split")
+    split_parser.add_argument("input")
+    split_parser.add_argument("-o", "--output-dir", required=True)
+    split_parser.add_argument("--by-pages", help="Page ranges like 1-3,4-7,8-10")
+    split_parser.add_argument("--by-chunks", type=int, help="Pages per chunk")
+
+    video_parser = subparsers.add_parser("video-to-images")
+    video_parser.add_argument("input")
+    video_parser.add_argument("-o", "--output-dir", required=True)
+    video_parser.add_argument("--format", default="png", choices=["png", "jpg", "webp"])
+    video_parser.add_argument("--quality", type=int, default=85)
+    video_parser.add_argument("--fps", type=float, help="Target FPS")
+    video_parser.add_argument("--max-frames", type=int, help="Max frames to extract")
+
+    video_pdf_parser = subparsers.add_parser("video-to-pdf")
+    video_pdf_parser.add_argument("input")
+    video_pdf_parser.add_argument("-o", "--output", required=True)
+    video_pdf_parser.add_argument("--quality", type=int, default=75)
+    video_pdf_parser.add_argument("--fps", type=float)
+    video_pdf_parser.add_argument("--max-frames", type=int)
+    video_pdf_parser.add_argument("--max-dimension", type=int)
+
+    return parser
+
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+    if args.command == "merge":
+        merge_pdfs(args.inputs, args.output)
+        print(f"merged {len(args.inputs)} files into {args.output}")
+    elif args.command == "compress":
+        ext = Path(args.input).suffix.lower()
+        if ext == ".pdf":
+            compress_pdf(args.input, args.output, quality=args.quality, max_dimension=args.max_dimension, dpi=args.dpi, mode=args.mode)
+        elif ext in IMAGE_EXTENSIONS:
+            compress_image(args.input, args.output, quality=args.quality, max_dimension=args.max_dimension)
+        else:
+            print(f"unsupported file type for compression: {ext}")
+            sys.exit(1)
+        before = os.path.getsize(args.input)
+        after = os.path.getsize(args.output)
+        ratio = (1 - after / before) * 100 if before else 0
+        print(f"{args.input}: {before} bytes -> {args.output}: {after} bytes ({ratio:.1f}% smaller)")
+    elif args.command == "convert":
+        paths = convert_file(args.input, args.output, quality=args.quality, dpi=args.dpi)
+        print(f"converted {args.input} -> {len(paths)} output file(s)")
+    elif args.command == "pdf-to-word":
+        pdf_to_word(args.input, args.output)
+        print(f"converted {args.input} -> {args.output}")
+    elif args.command == "split":
+        if args.by_pages:
+            ranges = []
+            for part in args.by_pages.split(","):
+                part = part.strip()
+                if "-" in part:
+                    a, b = part.split("-", 1)
+                    start = int(a)
+                    end = int(b) if b else None
+                    ranges.append((start, end))
+                else:
+                    p = int(part)
+                    ranges.append((p, p))
+            paths = split_pdf_by_pages(args.input, args.output_dir, ranges)
+            print(f"split into {len(paths)} files")
+        elif args.by_chunks:
+            paths = split_pdf_by_chunks(args.input, args.output_dir, args.by_chunks)
+            print(f"split into {len(paths)} chunks of {args.by_chunks} pages")
+        else:
+            print("specify --by-pages or --by-chunks")
+            sys.exit(1)
+    elif args.command == "video-to-images":
+        paths = video_to_frames(args.input, args.output_dir, fmt=args.format, quality=args.quality, 
+                                max_frames=args.max_frames, fps=args.fps)
+        print(f"extracted {len(paths)} frames to {args.output_dir}")
+    elif args.command == "video-to-pdf":
+        video_to_pdf(args.input, args.output, quality=args.quality, max_frames=args.max_frames,
+                     fps=args.fps, max_dimension=args.max_dimension)
+        print(f"converted video to {args.output}")
+
+
+if __name__ == "__main__":
+    main()
