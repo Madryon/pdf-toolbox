@@ -6,6 +6,7 @@ from flask import Flask, request, send_file, render_template, jsonify
 from werkzeug.utils import secure_filename
 import pdftool
 import pdftool_scan as scanner
+import pdftool_video as vidtool
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -406,8 +407,62 @@ def video_to_pdf_route():
         return jsonify({"error": str(e)}), 500
 
 
+# NEW: Video to MP3 (extract audio from an uploaded video file via ffmpeg)
+@app.route("/video-to-mp3", methods=["POST"])
+def video_to_mp3_route():
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "no file provided"}), 400
+    bitrate = request.form.get("bitrate", "192k")
 
-# NEW: Watermark PDF - Text
+    job_id = uuid.uuid4().hex
+    job_dir = UPLOAD_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    in_path = _save_upload(f, job_dir, f.filename)
+    out_name = Path(secure_filename(f.filename)).stem + ".mp3"
+    out_path = OUTPUT_DIR / f"{job_id}_{out_name}"
+
+    try:
+        vidtool.extract_audio(str(in_path), str(out_path), bitrate=bitrate)
+    except vidtool.VideoToolError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return send_file(
+        str(out_path), as_attachment=True,
+        download_name=out_name, mimetype="audio/mpeg",
+    )
+
+
+# NEW: Video Downloader (download from a URL via yt-dlp; 1000s of sites)
+@app.route("/download", methods=["POST"])
+def download_route():
+    url = (request.form.get("url") or "").strip()
+    fmt = request.form.get("format", "mp4")
+    if fmt not in ("mp4", "mp3"):
+        fmt = "mp4"
+    quality = request.form.get("quality", "best")
+
+    job_id = uuid.uuid4().hex
+    job_dir = UPLOAD_DIR / job_id
+
+    try:
+        out_path = vidtool.download_video(url, str(job_dir), fmt=fmt, quality=quality)
+    except vidtool.VideoToolError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    mimetype = "audio/mpeg" if fmt == "mp3" else "video/mp4"
+    download_name = "downloaded_audio.mp3" if fmt == "mp3" else "downloaded_video.mp4"
+    return send_file(
+        out_path, as_attachment=True,
+        download_name=download_name, mimetype=mimetype,
+    )
+
+
+
 @app.route("/watermark-text", methods=["POST"])
 def watermark_text_route():
     f = request.files.get("file")
@@ -741,6 +796,7 @@ def not_found(_e):
     if request.path.startswith("/api/") or request.path in (
         "/merge", "/compress", "/convert", "/pdf-to-word", "/images-to-pdf",
         "/split", "/video-to-images", "/video-to-pdf", "/watermark-text", "/watermark-image", "/lock", "/unlock",
+        "/video-to-mp3", "/download",
         "/scan/process", "/scan/build", "/scan/health"
     ):
         return jsonify({"error": "not found"}), 404
