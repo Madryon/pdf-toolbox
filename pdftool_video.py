@@ -1,14 +1,4 @@
-"""
-Video utilities module
-=======================
-- Extract/transcode audio from an uploaded video file to MP3 (via ffmpeg)
-- Download video/audio from a URL using yt-dlp (supports 1000s of sites)
 
-Both features shell out to the `ffmpeg` binary. Render's native Python
-runtime ships ffmpeg preinstalled, so no extra system setup should be
-needed there — but everything here degrades gracefully (with a clear
-user-facing message) if ffmpeg isn't found instead of crashing.
-"""
 
 import os
 import re
