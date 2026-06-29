@@ -2986,29 +2986,7 @@ document.getElementById('downloadFormat').onchange = (e) => {
   qualityRow.style.display = e.target.value === 'mp3' ? 'none' : 'flex';
 };
 
-// Download button handler
-document.getElementById('downloadBtn').onclick = async () => {
-  const url = document.getElementById('downloadUrl').value.trim();
-  if (!url) { setStatus('downloadStatus', 'Please enter a video URL', 'error'); return; }
-  if (!url.startsWith('http')) { setStatus('downloadStatus', 'Please enter a valid URL starting with http:// or https://', 'error'); return; }
 
-  const fd = new FormData();
-  fd.append('url', url);
-  fd.append('format', document.getElementById('downloadFormat').value);
-  fd.append('quality', document.getElementById('downloadQuality').value);
-
-  setLoading('downloadBtn', 'downloadStatus', true);
-  try {
-    const blob = await postForm('/download', fd);
-    const fmt = document.getElementById('downloadFormat').value;
-    const name = fmt === 'mp3' ? 'downloaded_audio.mp3' : 'downloaded_video.mp4';
-    const url = downloadBlob(blob, name);
-    renderTicket('downloadStatus', { filename: name, sub: `Downloaded · ${fmtSize(blob.size)}`, url });
-  } catch (e) {
-    setStatus('downloadStatus', e.message, 'error');
-  }
-  setLoading('downloadBtn', 'downloadStatus', false);
-};
 
 /* =========================================================
    THEME SWITCHER LOGIC
