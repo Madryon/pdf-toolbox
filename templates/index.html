@@ -2980,20 +2980,6 @@ document.getElementById('mp3Btn').onclick = async () => {
   setLoading('mp3Btn', 'mp3Status', false);
 };
 
-// Toggle quality select based on format
-document.getElementById('downloadFormat').onchange = (e) => {
-  const qualityRow = document.getElementById('qualityRow');
-  qualityRow.style.display = e.target.value === 'mp3' ? 'none' : 'flex';
-};
-
-
-
-/* =========================================================
-   THEME SWITCHER LOGIC
-   - Reads stored preference (localStorage)
-   - Slides the indicator to the active segment
-   - Updates <html data-theme="..."> which re-skins everything
-   ========================================================= */
 (function initThemeSwitcher() {
   const root = document.documentElement;
   const slider = document.getElementById('themeSlider');
