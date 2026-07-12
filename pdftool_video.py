@@ -12,9 +12,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import yt_dlp
-
-
 class VideoToolError(Exception):
     """Raised for expected/user-facing video/audio processing failures."""
     pass
