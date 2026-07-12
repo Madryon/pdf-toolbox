@@ -436,30 +436,7 @@ def video_to_mp3_route():
 
 
 # NEW: Video Downloader (download from a URL via yt-dlp; 1000s of sites)
-@app.route("/download", methods=["POST"])
-def download_route():
-    url = (request.form.get("url") or "").strip()
-    fmt = request.form.get("format", "mp4")
-    if fmt not in ("mp4", "mp3"):
-        fmt = "mp4"
-    quality = request.form.get("quality", "best")
 
-    job_id = uuid.uuid4().hex
-    job_dir = UPLOAD_DIR / job_id
-
-    try:
-        out_path = vidtool.download_video(url, str(job_dir), fmt=fmt, quality=quality)
-    except vidtool.VideoToolError as e:
-        return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-    mimetype = "audio/mpeg" if fmt == "mp3" else "video/mp4"
-    download_name = "downloaded_audio.mp3" if fmt == "mp3" else "downloaded_video.mp4"
-    return send_file(
-        out_path, as_attachment=True,
-        download_name=download_name, mimetype=mimetype,
-    )
 
 
 
