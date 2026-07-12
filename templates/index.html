@@ -2949,7 +2949,8 @@ document.getElementById('videoBtn').onclick = async () => {
 
   setLoading('videoBtn', 'videoStatus', true);
   try {
-    const blob = await postForm(isFrames ? '/video-to-Images' : '/video-to-pdf', fd);
+    // const blob = await postForm(isFrames ? '/video-to-Images' : '/video-to-pdf', fd);
+    const blob = await postForm(isFrames ? '/video-to-images' : '/video-to-pdf', fd);
     const base = files[0].name.replace(/\.[^.]+$/, '');
     const name = isFrames ? `${base}_frames.zip` : `${base}_video.pdf`;
     const url = downloadBlob(blob, name);
