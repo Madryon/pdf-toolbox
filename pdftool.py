@@ -324,7 +324,7 @@ def split_pdf_by_chunks(input_path, output_dir, pages_per_chunk):
 # NEW: Video to Images / PDF functions
 # ─────────────────────────────────────────────────────────────
 
-def video_to_frames(input_path, output_dir, fmt="png", quality=85, max_frames=None, fps=None):
+def video_to_frames(input_path, output_dir, fmt="png", quality=85, max_frames=None, fps=10):
     """
     Extract frames from a video file.
 
@@ -385,7 +385,7 @@ def video_to_frames(input_path, output_dir, fmt="png", quality=85, max_frames=No
     return paths
 
 
-def video_to_pdf(input_path, output_path, quality=75, max_frames=None, fps=None, max_dimension=None):
+def video_to_pdf(input_path, output_path, quality=75, max_frames=None, fps=10, max_dimension=None):
     """
     Convert video frames to a single PDF.
 
