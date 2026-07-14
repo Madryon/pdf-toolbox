@@ -763,6 +763,68 @@ def scan_build_route():
     )
 
 
+# ─────────────────────────────────────────────────────────────
+# QR CODE GENERATOR
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/qr-generate", methods=["POST"])
+def qr_generate_route():
+    """
+    Generate a QR code PNG from any text/URL -- works for a plain
+    website URL, a Google Drive share link, a link to a hosted PDF,
+    or any other text.
+    """
+    data = (request.form.get("data") or "").strip()
+    if not data:
+        return jsonify({"error": "no text or URL provided"}), 400
+
+    try:
+        box_size = max(1, min(50, int(request.form.get("box_size", 10))))
+        border = max(1, min(20, int(request.form.get("border", 4))))
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid numeric option"}), 400
+
+    fill_color = (request.form.get("fill_color") or "black").strip() or "black"
+    back_color = (request.form.get("back_color") or "white").strip() or "white"
+    error_correction = (request.form.get("error_correction") or "M").strip().upper()
+    if error_correction not in ("L", "M", "Q", "H"):
+        error_correction = "M"
+
+    job_id = uuid.uuid4().hex
+    logo_path = None
+    job_dir = None
+
+    logo_file = request.files.get("logo")
+    if logo_file and logo_file.filename:
+        ext = Path(logo_file.filename).suffix.lower()
+        if ext not in pdftool.IMAGE_EXTENSIONS:
+            return jsonify({"error": f"unsupported logo image type: {ext}"}), 400
+        job_dir = UPLOAD_DIR / job_id
+        job_dir.mkdir(parents=True, exist_ok=True)
+        logo_path = _save_upload(logo_file, job_dir, logo_file.filename)
+        # logo forces high error correction so the code stays scannable
+        error_correction = "H"
+
+    out_path = OUTPUT_DIR / f"{job_id}_qr.png"
+
+    try:
+        pdftool.generate_qr_code(
+            data, str(out_path),
+            box_size=box_size, border=border,
+            fill_color=fill_color, back_color=back_color,
+            error_correction=error_correction,
+            logo_path=str(logo_path) if logo_path else None,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return send_file(
+        str(out_path), as_attachment=True,
+        download_name="qrcode.png",
+        mimetype="image/png",
+    )
+
+
 @app.errorhandler(413)
 def too_large(_e):
     return jsonify({"error": "file too large (max 500MB)"}), 413
@@ -773,7 +835,7 @@ def not_found(_e):
     if request.path.startswith("/api/") or request.path in (
         "/merge", "/compress", "/convert", "/pdf-to-word", "/images-to-pdf",
         "/split", "/video-to-images", "/video-to-pdf", "/watermark-text", "/watermark-image", "/lock", "/unlock",
-        "/video-to-mp3", "/download",
+        "/video-to-mp3", "/download", "/qr-generate",
         "/scan/process", "/scan/build", "/scan/health"
     ):
         return jsonify({"error": "not found"}), 404
