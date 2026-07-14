@@ -1,4 +1,5 @@
 Flask>=3.0
+gunicorn>=21.2
 Werkzeug>=3.0
 pypdf>=4.0
 pypdfium2>=4.0
