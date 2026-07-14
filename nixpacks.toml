@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["ffmpeg", "tesseract"]
+nixPkgs = ["...","ffmpeg", "tesseract"]
 
 [start]
 cmd = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 600"
