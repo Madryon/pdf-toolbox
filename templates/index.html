@@ -1905,6 +1905,7 @@
     <div class="panel-head">
       <h2>Video to Images / PDF</h2>
       <p>Extract frames from a video and save them as individual Images or compile into a PDF.</p>
+      <p>⚠️Error may occur on 4K Videos and large files</p>
     </div>
     <div class="dropzone" data-input="videoFile">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
@@ -1913,7 +1914,7 @@
       <input type="file" id="videoFile" accept="video/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.mpeg,.mpg,.3gp">
     </div>
     <div class="file-list" id="videoList"></div>
-    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 60 for best results. Leave empty for auto (all frames).</div>
+    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 30 for best results. </div>
 
     <div class="split-type-toggle">
       <button class="split-type-btn active" data-type="frames">Extract Frames (ZIP)</button>
@@ -1937,7 +1938,7 @@
         </div>
         <div class="option-row">
           <label>Target FPS</label>
-          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60">
+          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60" value="30">
         </div>
         <div class="option-row">
           <label>Max frames</label>
@@ -1955,7 +1956,7 @@
         </div>
         <div class="option-row">
           <label>Target FPS</label>
-          <input type="number" id="videoPdfFps" value="" placeholder="auto" min="1" max="60">
+          <input type="number" id="videoPdfFps" value="" placeholder="auto" min="1" max="60"  value="30">
         </div>
         <div class="option-row">
           <label>Max frames</label>
@@ -2003,7 +2004,7 @@
   <div class="panel" id="qr">
     <div class="panel-head">
       <h2>QR Code Generator</h2>
-      <p>Paste your site URL, a Google Drive folder link, or a link to a PDF — get a downloadable QR code.</p>
+      <p>Paste your URL, a Google Drive folder link, or a link to a PDF — get a downloadable QR code.</p>
     </div>
 
     <div class="options">
