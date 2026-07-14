@@ -9,6 +9,8 @@ from pathlib import Path
 from PIL import Image
 from pypdf import PdfReader, PdfWriter
 import pypdfium2 as pdfium
+import qrcode
+from qrcode.constants import ERROR_CORRECT_L, ERROR_CORRECT_M, ERROR_CORRECT_Q, ERROR_CORRECT_H
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif", ".gif"}
 PDF_EXTENSIONS = {".pdf"}
@@ -800,6 +802,80 @@ def main():
         video_to_pdf(args.input, args.output, quality=args.quality, max_frames=args.max_frames,
                      fps=args.fps, max_dimension=args.max_dimension)
         print(f"converted video to {args.output}")
+
+
+# ─────────────────────────────────────────────────────────────
+# NEW: QR Code generator
+# ─────────────────────────────────────────────────────────────
+
+_ERROR_LEVELS = {
+    "L": ERROR_CORRECT_L,   # ~7% recovery
+    "M": ERROR_CORRECT_M,   # ~15% recovery (default)
+    "Q": ERROR_CORRECT_Q,   # ~25% recovery
+    "H": ERROR_CORRECT_H,   # ~30% recovery -- best if adding a logo
+}
+
+
+def generate_qr_code(
+    data,
+    output_path,
+    box_size=10,
+    border=4,
+    fill_color="black",
+    back_color="white",
+    error_correction="M",
+    logo_path=None,
+):
+    """
+    Generate a QR code image encoding `data` (a URL or any text --
+    e.g. a website link, a Google Drive share link, or a link to a
+    hosted PDF).
+
+    Args:
+        data: the text/URL to encode
+        output_path: where to save the PNG
+        box_size: pixel size of each QR module
+        border: border thickness in modules (min 4 per QR spec)
+        fill_color: foreground color (name or hex)
+        back_color: background color (name or hex)
+        error_correction: "L", "M", "Q", or "H" -- higher tolerates more
+            damage/obstruction, useful when overlaying a logo
+        logo_path: optional path to a logo image to place in the center
+
+    Returns:
+        output_path
+    """
+    if not data or not str(data).strip():
+        raise ValueError("No data provided to encode")
+
+    level = _ERROR_LEVELS.get((error_correction or "M").upper(), ERROR_CORRECT_M)
+
+    qr = qrcode.QRCode(
+        error_correction=level,
+        box_size=max(1, min(50, int(box_size))),
+        border=max(1, min(20, int(border))),
+    )
+    qr.add_data(str(data).strip())
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color=fill_color or "black", back_color=back_color or "white").convert("RGB")
+
+    if logo_path:
+        logo = Image.open(logo_path)
+        logo = _to_rgb(logo)
+        qr_w, qr_h = img.size
+        logo_size = qr_w // 4
+        logo.thumbnail((logo_size, logo_size), Image.LANCZOS)
+        # small white padding behind the logo for scan reliability
+        pad = 8
+        bg = Image.new("RGB", (logo.width + pad * 2, logo.height + pad * 2), "white")
+        bg.paste(logo, (pad, pad))
+        pos = ((qr_w - bg.width) // 2, (qr_h - bg.height) // 2)
+        img.paste(bg, pos)
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    img.save(output_path, "PNG")
+    return output_path
 
 
 if __name__ == "__main__":
