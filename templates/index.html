@@ -1839,6 +1839,7 @@
     <div class="panel-head">
       <h2>Split a PDF</h2>
       <p>Extract specific pages or split into equal-sized chunks.</p>
+      
     </div>
     <div class="dropzone" data-input="splitFile">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><line x1="12" y1="12" x2="12" y2="21" stroke-width="1.2"/></svg>
@@ -1882,6 +1883,7 @@
     <div class="panel-head">
       <h2>Video to Images / PDF</h2>
       <p>Extract frames from a video and save them as individual Images or compile into a PDF.</p>
+      <p> ⚠️ May face problem in 4K VEDIOS and large files </p>
     </div>
     <div class="dropzone" data-input="videoFile">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
@@ -1890,7 +1892,7 @@
       <input type="file" id="videoFile" accept="video/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.mpeg,.mpg,.3gp">
     </div>
     <div class="file-list" id="videoList"></div>
-    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 60 for best results. Leave empty for auto (all frames).</div>
+    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 30 for best results.</div>
 
     <div class="split-type-toggle">
       <button class="split-type-btn active" data-type="frames">Extract Frames (ZIP)</button>
@@ -1914,7 +1916,7 @@
         </div>
         <div class="option-row">
           <label>Target FPS</label>
-          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60">
+          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60" value="25">
         </div>
         <div class="option-row">
           <label>Max frames</label>
@@ -1934,14 +1936,14 @@
           <label>Target FPS</label>
           <input type="number" id="videoPdfFps" value="" placeholder="auto" min="1" max="60">
         </div>
-        <div class="option-row">
+        <!-- <div class="option-row">
           <label>Max frames</label>
           <input type="number" id="videoPdfMax" value="" placeholder="all" min="1">
-        </div>
-        <div class="option-row">
+        </div> -->
+        <!-- <div class="option-row">
           <label>Max dimension (px)</label>
           <input type="number" id="videoPdfMaxDim" value="" placeholder="original" min="100" max="4000">
-        </div>
+        </div> -->
       </div>
     </div>
 
