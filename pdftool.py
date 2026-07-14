@@ -1,6 +1,7 @@
 import io
 import os
 import shutil
+import subprocess
 import sys
 import uuid
 import zipfile
@@ -324,9 +325,68 @@ def split_pdf_by_chunks(input_path, output_dir, pages_per_chunk):
 # NEW: Video to Images / PDF functions
 # ─────────────────────────────────────────────────────────────
 
+def _ffmpeg_bin():
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise ValueError(
+            "ffmpeg is not installed on the server. "
+            "Make sure ffmpeg is available in the deploy environment (nixpacks.toml)."
+        )
+    return ffmpeg
+
+
+def _quality_to_ffmpeg_qscale(quality):
+    """Map a 1-100 'quality' knob to ffmpeg's -q:v scale (2=best, 31=worst)."""
+    quality = max(1, min(100, int(quality)))
+    return max(2, round(31 - (quality / 100) * 29))
+
+
+def _extract_frames_ffmpeg(input_path, output_dir, fmt="png", quality=85,
+                            max_frames=None, fps=None, max_dimension=None):
+    """
+    Extract frames from a video using ffmpeg directly (native C decode + filter,
+    only touches the frames actually being kept -- much faster than reading
+    every frame in a Python loop).
+    """
+    ffmpeg = _ffmpeg_bin()
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    vf_parts = []
+    if fps and fps > 0:
+        vf_parts.append(f"fps={fps}")
+    if max_dimension:
+        vf_parts.append(
+            f"scale='if(gt(iw,ih),min({max_dimension},iw),-2)':"
+            f"'if(gt(iw,ih),-2,min({max_dimension},ih))'"
+        )
+
+    ext = "jpg" if fmt in ("jpg", "jpeg") else fmt
+    out_pattern = str(output_dir / f"frame_%04d.{ext}")
+
+    cmd = [ffmpeg, "-y", "-i", str(input_path)]
+    if vf_parts:
+        cmd += ["-vf", ",".join(vf_parts)]
+    if ext in ("jpg", "webp"):
+        cmd += ["-q:v", str(_quality_to_ffmpeg_qscale(quality))]
+    if max_frames:
+        cmd += ["-frames:v", str(max_frames)]
+    cmd += [out_pattern]
+
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=600)
+    if result.returncode != 0:
+        stderr = result.stderr.decode(errors="ignore")[-1500:]
+        raise ValueError(f"ffmpeg failed to extract frames: {stderr}")
+
+    paths = sorted(str(p) for p in output_dir.glob(f"frame_*.{ext}"))
+    if not paths:
+        raise ValueError("No frames could be extracted from video")
+    return paths
+
+
 def video_to_frames(input_path, output_dir, fmt="png", quality=85, max_frames=None, fps=10):
     """
-    Extract frames from a video file.
+    Extract frames from a video file (ffmpeg-backed, fast).
 
     Args:
         input_path: path to video file
@@ -339,55 +399,15 @@ def video_to_frames(input_path, output_dir, fmt="png", quality=85, max_frames=No
     Returns:
         list of output file paths
     """
-    import cv2
-
-    cap = cv2.VideoCapture(input_path)
-    if not cap.isOpened():
-        raise ValueError(f"Could not open video: {input_path}")
-
-    video_fps = cap.get(cv2.CAP_PROP_FPS)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    paths = []
-    frame_count = 0
-    saved_count = 0
-
-    # Calculate frame skip interval
-    if fps and fps > 0 and video_fps > 0:
-        skip_interval = max(1, int(round(video_fps / fps)))
-    else:
-        skip_interval = 1
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        if frame_count % skip_interval == 0:
-            # Convert BGR to RGB
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            pil_image = Image.fromarray(rgb_frame)
-
-            out_path = output_dir / f"frame_{saved_count + 1:04d}.{fmt}"
-            _save_image(pil_image, str(out_path), quality=quality, fmt=fmt)
-            paths.append(str(out_path))
-            saved_count += 1
-
-            if max_frames and saved_count >= max_frames:
-                break
-
-        frame_count += 1
-
-    cap.release()
-    return paths
+    return _extract_frames_ffmpeg(
+        input_path, output_dir, fmt=fmt, quality=quality,
+        max_frames=max_frames, fps=fps,
+    )
 
 
 def video_to_pdf(input_path, output_path, quality=75, max_frames=None, fps=10, max_dimension=None):
     """
-    Convert video frames to a single PDF.
+    Convert video frames to a single PDF (ffmpeg-backed, fast).
 
     Args:
         input_path: path to video file
@@ -397,51 +417,19 @@ def video_to_pdf(input_path, output_path, quality=75, max_frames=None, fps=10, m
         fps: target FPS for extraction
         max_dimension: resize frames if larger than this
     """
-    import cv2
+    import tempfile
 
-    cap = cv2.VideoCapture(input_path)
-    if not cap.isOpened():
-        raise ValueError(f"Could not open video: {input_path}")
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        frame_paths = _extract_frames_ffmpeg(
+            input_path, tmp_dir, fmt="jpg", quality=quality,
+            max_frames=max_frames, fps=fps, max_dimension=max_dimension,
+        )
 
-    video_fps = cap.get(cv2.CAP_PROP_FPS)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        images = [_to_rgb(Image.open(p)) for p in frame_paths]
+        first, *rest = images
+        first.save(output_path, "PDF", save_all=True, append_images=rest,
+                    resolution=72.0, quality=quality)
 
-    images = []
-    frame_count = 0
-    saved_count = 0
-
-    if fps and fps > 0 and video_fps > 0:
-        skip_interval = max(1, int(round(video_fps / fps)))
-    else:
-        skip_interval = 1
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        if frame_count % skip_interval == 0:
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            pil_image = Image.fromarray(rgb_frame)
-            pil_image = _to_rgb(pil_image)
-            if max_dimension:
-                pil_image = _resize(pil_image, max_dimension)
-            images.append(pil_image)
-            saved_count += 1
-
-            if max_frames and saved_count >= max_frames:
-                break
-
-        frame_count += 1
-
-    cap.release()
-
-    if not images:
-        raise ValueError("No frames could be extracted from video")
-
-    # Save as PDF with JPEG compression for smaller file size
-    first, *rest = images
-    first.save(output_path, "PDF", save_all=True, append_images=rest, resolution=72.0, quality=quality)
     return output_path
 
 
