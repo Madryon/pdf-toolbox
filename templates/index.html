@@ -1504,6 +1504,25 @@
       </div>
     </div>
 
+    <div class="category">
+      <div class="cat-title">
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM19 19h2v2h-2z"/></svg>
+        QR Tools
+        <span class="cat-count">1</span>
+      </div>
+      <div class="tool-grid">
+
+        <button type="button" class="tool-card" data-tool="qr">
+          <div class="tool-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM19 19h2v2h-2z"/></svg></div>
+          <div class="tool-info">
+            <div class="tool-name">QR Code Generator</div>
+            <div class="tool-desc">Turn any website URL, Google Drive folder link, or PDF link into a scannable QR code.</div>
+          </div>
+        </button>
+
+      </div>
+    </div>
+
   </div>
 
   <!-- ==================== TOOL VIEW (existing app, unchanged) ==================== -->
@@ -1550,6 +1569,10 @@
     <button class="tab" data-tab="mp3">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
       MP3
+    </button>
+    <button class="tab" data-tab="qr">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      QR Code
     </button>
     
     <button class="tab" data-tab="watermark">
@@ -1839,7 +1862,6 @@
     <div class="panel-head">
       <h2>Split a PDF</h2>
       <p>Extract specific pages or split into equal-sized chunks.</p>
-      
     </div>
     <div class="dropzone" data-input="splitFile">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><line x1="12" y1="12" x2="12" y2="21" stroke-width="1.2"/></svg>
@@ -1883,7 +1905,6 @@
     <div class="panel-head">
       <h2>Video to Images / PDF</h2>
       <p>Extract frames from a video and save them as individual Images or compile into a PDF.</p>
-      <p> ⚠️ May face problem in 4K Videos and large files </p>
     </div>
     <div class="dropzone" data-input="videoFile">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
@@ -1892,7 +1913,7 @@
       <input type="file" id="videoFile" accept="video/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.mpeg,.mpg,.3gp">
     </div>
     <div class="file-list" id="videoList"></div>
-    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 30 for best results.</div>
+    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 60 for best results. Leave empty for auto (all frames).</div>
 
     <div class="split-type-toggle">
       <button class="split-type-btn active" data-type="frames">Extract Frames (ZIP)</button>
@@ -1916,7 +1937,7 @@
         </div>
         <div class="option-row">
           <label>Target FPS</label>
-          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60" value="25">
+          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60">
         </div>
         <div class="option-row">
           <label>Max frames</label>
@@ -1976,6 +1997,64 @@
     </div>
     <button class="submit-btn" id="mp3Btn"><span class="btn-label">Extract MP3</span><div class="btn-spinner"></div></button>
     <div class="status" id="mp3Status"></div>
+  </div>
+
+  <!-- QR CODE GENERATOR PANEL -->
+  <div class="panel" id="qr">
+    <div class="panel-head">
+      <h2>QR Code Generator</h2>
+      <p>Paste your site URL, a Google Drive folder link, or a link to a PDF — get a downloadable QR code.</p>
+    </div>
+
+    <div class="options">
+      <div class="option-row" style="flex-direction:column; align-items:stretch; gap:8px;">
+        <label>Link or text to encode</label>
+        <textarea id="qrData" rows="3" placeholder="https://your-site.com  ·  https://drive.google.com/drive/folders/...  ·  https://drive.google.com/file/d/.../view"
+          style="width:100%; resize:vertical; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--panel-2, transparent); color:inherit; font:inherit;"></textarea>
+      </div>
+
+      <div class="option-row">
+        <label>Quick fill</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="split-type-btn" data-qr-example="site">My Website</button>
+          <button type="button" class="split-type-btn" data-qr-example="drive">Drive Folder</button>
+          <button type="button" class="split-type-btn" data-qr-example="pdf">PDF Link</button>
+        </div>
+      </div>
+
+      <div class="option-row">
+        <label>Foreground color</label>
+        <input type="color" id="qrFill" value="#000000">
+      </div>
+      <div class="option-row">
+        <label>Background color</label>
+        <input type="color" id="qrBack" value="#ffffff">
+      </div>
+      <div class="option-row">
+        <label>Size (box px)</label>
+        <input type="number" id="qrBoxSize" value="10" min="2" max="40">
+      </div>
+      <div class="option-row">
+        <label>Error correction</label>
+        <select id="qrErrorCorrection">
+          <option value="L">Low (~7%)</option>
+          <option value="M" selected>Medium (~15%)</option>
+          <option value="Q">Quartile (~25%)</option>
+          <option value="H">High (~30%) — best with a logo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="dropzone" data-input="qrLogoFile">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      <div class="title">Optional: drop a logo to place in the center</div>
+      <div class="hint">PNG · JPG · WEBP — leave empty for a plain QR code</div>
+      <input type="file" id="qrLogoFile" accept="image/*,.png,.jpg,.jpeg,.webp">
+    </div>
+    <div class="file-list" id="qrLogoList"></div>
+
+    <button class="submit-btn" id="qrBtn"><span class="btn-label">Generate QR Code</span><div class="btn-spinner"></div></button>
+    <div class="status" id="qrStatus"></div>
   </div>
 
   <!-- WATERMARK PANEL -->
@@ -2984,6 +3063,76 @@ document.getElementById('mp3Btn').onclick = async () => {
     setStatus('mp3Status', e.message, 'error');
   }
   setLoading('mp3Btn', 'mp3Status', false);
+};
+
+// QR Code Generator setup
+setupDropzone('qrLogoFile', 'qrLogoList', false);
+
+const qrExamples = {
+  site: 'https://your-site.up.railway.app',
+  drive: 'https://drive.google.com/drive/folders/YOUR_FOLDER_ID',
+  pdf: 'https://drive.google.com/file/d/YOUR_FILE_ID/view',
+};
+document.querySelectorAll('[data-qr-example]').forEach(btn => {
+  btn.onclick = () => {
+    const key = btn.dataset.qrExample;
+    const field = document.getElementById('qrData');
+    if (!field.value.trim()) field.value = qrExamples[key];
+    field.focus();
+  };
+});
+
+function renderQrTicket(id, { filename, sub, url }) {
+  const el = document.getElementById(id);
+  el.className = 'status show';
+  el.innerHTML = `
+    <div class="ticket">
+      <div class="ticket-top">
+        <span class="ticket-label">CLAIM TICKET</span>
+        <span class="ticket-no">No. ${nextTicketNo()}</span>
+        <span class="ticket-ready">READY</span>
+      </div>
+      <div class="ticket-perf"></div>
+      <div class="ticket-bottom" style="align-items:center;">
+        <img src="${url}" alt="QR code" style="width:96px; height:96px; border-radius:6px; background:#fff; padding:4px; margin-right:12px;">
+        <div class="ticket-file">
+          <span class="ticket-filename">${escapeHtml(filename)}</span>
+          <span class="ticket-meta">${escapeHtml(sub)}</span>
+        </div>
+        <a class="ticket-download" href="${url}" download="${escapeHtml(filename)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+          Download
+        </a>
+      </div>
+    </div>`;
+}
+
+document.getElementById('qrBtn').onclick = async () => {
+  const data = document.getElementById('qrData').value.trim();
+  if (!data) { setStatus('qrStatus', 'Paste a URL or text to encode', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('data', data);
+  fd.append('fill_color', document.getElementById('qrFill').value);
+  fd.append('back_color', document.getElementById('qrBack').value);
+  fd.append('box_size', document.getElementById('qrBoxSize').value);
+  fd.append('error_correction', document.getElementById('qrErrorCorrection').value);
+
+  const logoFiles = state.qrLogoList;
+  if (logoFiles && logoFiles.length === 1) {
+    fd.append('logo', logoFiles[0]);
+  }
+
+  setLoading('qrBtn', 'qrStatus', true);
+  try {
+    const blob = await postForm('/qr-generate', fd);
+    const name = 'qrcode.png';
+    const url = downloadBlob(blob, name);
+    renderQrTicket('qrStatus', { filename: name, sub: `QR code generated · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('qrStatus', e.message, 'error');
+  }
+  setLoading('qrBtn', 'qrStatus', false);
 };
 
 (function initThemeSwitcher() {
