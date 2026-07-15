@@ -3262,15 +3262,13 @@ document.getElementById('unlockBtn').onclick = async () => {
 
 /* =========================================================
    QR CODE GENERATOR (pure client-side)
-   - Live preview
-   - Type-specific payloads (text/email/phone/sms/wifi/vcard)
-   - Configurable size, error-correction, fg/bg colors
-   - Download as PNG or vector SVG
+   - Live preview, type-specific payloads, PNG + SVG download
+   - Uses qrcode-generator lib (kazuhikoarase) via jsDelivr
    ========================================================= */
 const QR = (() => {
   const $ = (id) => document.getElementById(id);
-  let currentMatrix = null;   // { size, modules: number[][], size } from qrcode lib
   let currentPayload = '';
+  let currentQr = null;        // qrcode-generator instance
 
   function getPayload() {
     const type = $('qrType').value;
@@ -3325,22 +3323,16 @@ const QR = (() => {
     return '';
   }
 
-  function buildMatrix(payload) {
+  // Build the QR object using the lib's native API.
+  // typeNumber=0 -> lib auto-picks the smallest version that fits the data.
+  // errorCorrectionLevel must be the STRING 'L' | 'M' | 'Q' | 'H'.
+  function buildQR(payload) {
     if (!payload) return null;
-    // Type numbers from the qrcode-generator lib
-    const eccMap = { L: 0, M: 1, Q: 2, H: 3 };
-    const ecc = eccMap[$('qrEcc').value] ?? 1;
+    const ecc = $('qrEcc').value || 'M';
     const qr = qrcode(0, ecc);
     qr.addData(payload);
     qr.make();
-    const size = qr.getModuleCount();
-    const modules = [];
-    for (let r = 0; r < size; r++) {
-      const row = [];
-      for (let c = 0; c < size; c++) row.push(qr.isDark(r, c) ? 1 : 0);
-      modules.push(row);
-    }
-    return { size, modules, qr };
+    return qr;
   }
 
   function renderPreview() {
@@ -3352,52 +3344,32 @@ const QR = (() => {
     preview.innerHTML = '';
     if (!payload) {
       preview.style.background = 'repeating-linear-gradient(45deg, #f3f4f6 0 8px, #e5e7eb 8px 16px)';
-      currentMatrix = null;
+      currentQr = null;
       return;
     }
     preview.style.background = '#fff';
 
-    const mat = buildMatrix(payload);
-    if (!mat) return;
-    currentMatrix = mat;
+    let qr;
+    try { qr = buildQR(payload); }
+    catch (e) { preview.innerHTML = `<div style="color:#BD3A2B; padding:18px; font-size:12px;">Could not encode: ${e.message || e}</div>`; currentQr = null; return; }
+    if (!qr) return;
+    currentQr = qr;
 
-    const size = parseInt($('qrSize').value, 10) || 320;
-    const fg = $('qrFg').value;
-    const bg = $('qrBg').value;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    canvas.style.width = size + 'px';
-    canvas.style.height = size + 'px';
-    canvas.style.imageRendering = 'pixelated';
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = fg;
-    const cell = size / mat.size;
-    for (let r = 0; r < mat.size; r++) {
-      for (let c = 0; c < mat.size; c++) {
-        if (mat.modules[r][c]) ctx.fillRect(Math.floor(c * cell), Math.floor(r * cell), Math.ceil(cell), Math.ceil(cell));
-      }
+    // Use the lib's createImgTag for a crisp rendered preview.
+    // cellSize controls the on-screen pixel size; we wrap in a sized div.
+    const targetSize = Math.max(80, Math.min(1200, parseInt($('qrSize').value, 10) || 320));
+    const moduleCount = qr.getModuleCount();
+    const cellSize = Math.max(2, Math.floor(targetSize / (moduleCount + 8))); // 4-module margin
+    const imgTag = qr.createImgTag(cellSize, 4);
+    preview.innerHTML = imgTag;
+    const img = preview.querySelector('img');
+    if (img) {
+      img.style.width = targetSize + 'px';
+      img.style.height = targetSize + 'px';
+      img.style.imageRendering = 'pixelated';
+      img.style.display = 'block';
+      img.alt = payload;
     }
-    preview.appendChild(canvas);
-  }
-
-  function buildSVG() {
-    if (!currentMatrix) return null;
-    const { size, modules } = currentMatrix;
-    const fg = $('qrFg').value;
-    const bg = $('qrBg').value;
-    const cell = 10;
-    const px = size * cell;
-    let path = '';
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        if (modules[r][c]) path += `M${c * cell} ${r * cell}h${cell}v${cell}h-${cell}z`;
-      }
-    }
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${px} ${px}" width="${px}" height="${px}"><rect width="100%" height="100%" fill="${bg}"/><path d="${path}" fill="${fg}"/></svg>`;
   }
 
   function downloadBlob(blob, name) {
@@ -3409,6 +3381,10 @@ const QR = (() => {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  function safeName() {
+    return (currentPayload || 'qr').replace(/[^a-z0-9]+/gi, '_').slice(0, 40) || 'qr';
   }
 
   function bind() {
@@ -3427,28 +3403,60 @@ const QR = (() => {
       renderPreview();
     });
 
-    // PNG download
+    // PNG download: render at higher cell size to a canvas, then export.
     $('qrDownloadPng').addEventListener('click', () => {
-      if (!currentMatrix || !currentPayload) { setStatus('qrStatus', 'Enter content first', 'error'); return; }
-      const canvas = $('qrPreview').querySelector('canvas');
-      if (!canvas) return;
+      if (!currentQr || !currentPayload) { setStatus('qrStatus', 'Enter content first', 'error'); return; }
+      const targetSize = Math.max(80, Math.min(4000, parseInt($('qrSize').value, 10) || 320));
+      const moduleCount = currentQr.getModuleCount();
+      const cellSize = Math.max(4, Math.floor(targetSize / (moduleCount + 8)));
+      const margin = 4;
+      const px = cellSize * (moduleCount + margin * 2);
+      const fg = $('qrFg').value || '#000000';
+      const bg = $('qrBg').value || '#ffffff';
+
+      const canvas = document.createElement('canvas');
+      canvas.width = px; canvas.height = px;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, px, px);
+      ctx.fillStyle = fg;
+      for (let r = 0; r < moduleCount; r++) {
+        for (let c = 0; c < moduleCount; c++) {
+          if (currentQr.isDark(r, c)) {
+            ctx.fillRect((c + margin) * cellSize, (r + margin) * cellSize, cellSize, cellSize);
+          }
+        }
+      }
       canvas.toBlob((blob) => {
         if (!blob) { setStatus('qrStatus', 'Could not generate PNG', 'error'); return; }
-        const safe = currentPayload.replace(/[^a-z0-9]+/gi, '_').slice(0, 40) || 'qr';
-        downloadBlob(blob, `qr_${safe}.png`);
-        setStatus('qrStatus', 'PNG downloaded', 'info');
+        downloadBlob(blob, `qr_${safeName()}.png`);
+        setStatus('qrStatus', 'PNG downloaded ✓', 'info');
       }, 'image/png');
     });
 
-    // SVG download
+    // SVG download: native createSvgTag from the lib (vector, perfect quality).
     $('qrDownloadSvg').addEventListener('click', () => {
-      if (!currentMatrix || !currentPayload) { setStatus('qrStatus', 'Enter content first', 'error'); return; }
-      const svg = buildSVG();
-      if (!svg) return;
+      if (!currentQr || !currentPayload) { setStatus('qrStatus', 'Enter content first', 'error'); return; }
+      const moduleCount = currentQr.getModuleCount();
+      const cellSize = 10;
+      const margin = 4;
+      const fg = $('qrFg').value || '#000000';
+      const bg = $('qrBg').value || '#ffffff';
+      const px = cellSize * (moduleCount + margin * 2);
+      let path = '';
+      for (let r = 0; r < moduleCount; r++) {
+        for (let c = 0; c < moduleCount; c++) {
+          if (currentQr.isDark(r, c)) {
+            const x = (c + margin) * cellSize;
+            const y = (r + margin) * cellSize;
+            path += `M${x} ${y}h${cellSize}v${cellSize}h-${cellSize}z`;
+          }
+        }
+      }
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${px} ${px}" width="${px}" height="${px}"><rect width="100%" height="100%" fill="${bg}"/><path d="${path}" fill="${fg}"/></svg>`;
       const blob = new Blob([svg], { type: 'image/svg+xml' });
-      const safe = currentPayload.replace(/[^a-z0-9]+/gi, '_').slice(0, 40) || 'qr';
-      downloadBlob(blob, `qr_${safe}.svg`);
-      setStatus('qrStatus', 'SVG downloaded', 'info');
+      downloadBlob(blob, `qr_${safeName()}.svg`);
+      setStatus('qrStatus', 'SVG downloaded ✓', 'info');
     });
 
     renderPreview();
