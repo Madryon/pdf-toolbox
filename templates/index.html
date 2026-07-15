@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -160,7 +161,7 @@
 
   .tabs {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
     gap: 6px;
     margin-bottom: 14px;
   }
@@ -600,6 +601,9 @@
 
   @media (max-width: 900px) {
     .tabs { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .qr-layout { grid-template-columns: 1fr !important; }
   }
   @media (max-width: 700px) {
     .tabs { grid-template-columns: repeat(3, 1fr); }
@@ -1499,7 +1503,7 @@
           </div>
         </button>
 
-      
+
 
       </div>
     </div>
@@ -1518,6 +1522,7 @@
             <div class="tool-name">QR Code Generator</div>
             <div class="tool-desc">Turn any website URL, Google Drive folder link, or PDF link into a scannable QR code.</div>
           </div>
+          <span class="tool-badge">New</span>
         </button>
 
       </div>
@@ -1570,10 +1575,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
       MP3
     </button>
-    <button class="tab" data-tab="qr">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      QR Code
-    </button>
     
     <button class="tab" data-tab="watermark">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
@@ -1586,6 +1587,10 @@
     <button class="tab" data-tab="unlock">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><path d="M12 16v2"/></svg>
       Unlock
+    </button>
+    <button class="tab" data-tab="qr">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM19 19h2v2h-2z"/></svg>
+      QR Code
     </button>
   </nav>
 
@@ -1905,7 +1910,6 @@
     <div class="panel-head">
       <h2>Video to Images / PDF</h2>
       <p>Extract frames from a video and save them as individual Images or compile into a PDF.</p>
-      <p>⚠️Error may occur on 4K Videos and large files</p>
     </div>
     <div class="dropzone" data-input="videoFile">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/></svg>
@@ -1914,7 +1918,7 @@
       <input type="file" id="videoFile" accept="video/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v,.mpeg,.mpg,.3gp">
     </div>
     <div class="file-list" id="videoList"></div>
-    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 30 for best results. </div>
+    <div class="hint-text" style="margin-top:8px; color:var(--stamp); font-weight:600;">⚠️ Set FPS between 1 to 60 for best results. Leave empty for auto (all frames).</div>
 
     <div class="split-type-toggle">
       <button class="split-type-btn active" data-type="frames">Extract Frames (ZIP)</button>
@@ -1938,7 +1942,7 @@
         </div>
         <div class="option-row">
           <label>Target FPS</label>
-          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60" value="30">
+          <input type="number" id="videoFrameFps" value="" placeholder="auto" min="1" max="60">
         </div>
         <div class="option-row">
           <label>Max frames</label>
@@ -1956,7 +1960,7 @@
         </div>
         <div class="option-row">
           <label>Target FPS</label>
-          <input type="number" id="videoPdfFps" value="" placeholder="auto" min="1" max="60"  value="30">
+          <input type="number" id="videoPdfFps" value="" placeholder="auto" min="1" max="60">
         </div>
         <div class="option-row">
           <label>Max frames</label>
@@ -2000,64 +2004,6 @@
     <div class="status" id="mp3Status"></div>
   </div>
 
-  <!-- QR CODE GENERATOR PANEL -->
-  <div class="panel" id="qr">
-    <div class="panel-head">
-      <h2>QR Code Generator</h2>
-      <p>Paste your URL, a Google Drive folder link, or a link to a PDF — get a downloadable QR code.</p>
-    </div>
-
-    <div class="options">
-      <div class="option-row" style="flex-direction:column; align-items:stretch; gap:8px;">
-        <label>Link or text to encode</label>
-        <textarea id="qrData" rows="3" placeholder="https://your-site.com  ·  https://drive.google.com/drive/folders/...  ·  https://drive.google.com/file/d/.../view"
-          style="width:100%; resize:vertical; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--panel-2, transparent); color:inherit; font:inherit;"></textarea>
-      </div>
-
-      <div class="option-row">
-        <label>Quick fill</label>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button type="button" class="split-type-btn" data-qr-example="site">My Website</button>
-          <button type="button" class="split-type-btn" data-qr-example="drive">Drive Folder</button>
-          <button type="button" class="split-type-btn" data-qr-example="pdf">PDF Link</button>
-        </div>
-      </div>
-
-      <div class="option-row">
-        <label>Foreground color</label>
-        <input type="color" id="qrFill" value="#000000">
-      </div>
-      <div class="option-row">
-        <label>Background color</label>
-        <input type="color" id="qrBack" value="#ffffff">
-      </div>
-      <div class="option-row">
-        <label>Size (box px)</label>
-        <input type="number" id="qrBoxSize" value="10" min="2" max="40">
-      </div>
-      <div class="option-row">
-        <label>Error correction</label>
-        <select id="qrErrorCorrection">
-          <option value="L">Low (~7%)</option>
-          <option value="M" selected>Medium (~15%)</option>
-          <option value="Q">Quartile (~25%)</option>
-          <option value="H">High (~30%) — best with a logo</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="dropzone" data-input="qrLogoFile">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-      <div class="title">Optional: drop a logo to place in the center</div>
-      <div class="hint">PNG · JPG · WEBP — leave empty for a plain QR code</div>
-      <input type="file" id="qrLogoFile" accept="image/*,.png,.jpg,.jpeg,.webp">
-    </div>
-    <div class="file-list" id="qrLogoList"></div>
-
-    <button class="submit-btn" id="qrBtn"><span class="btn-label">Generate QR Code</span><div class="btn-spinner"></div></button>
-    <div class="status" id="qrStatus"></div>
-  </div>
-
   <!-- WATERMARK PANEL -->
   <div class="panel" id="watermark">
     <div class="panel-head">
@@ -2073,8 +2019,8 @@
     <div class="file-list" id="watermarkList"></div>
 
     <div class="split-type-toggle">
-      <button class="split-type-btn active" data-type="text">Text Watermark</button>
-      <button class="split-type-btn" data-type="image">Image Watermark</button>
+      <button class="split-type-btn active" data-type="text" data-target="watermarkText">Text Watermark</button>
+      <button class="split-type-btn" data-type="image" data-target="watermarkImage">Image Watermark</button>
     </div>
 
     <div class="split-option active" id="watermarkText">
@@ -2228,12 +2174,133 @@
     <div class="status" id="unlockStatus"></div>
   </div>
 
+  <!-- QR CODE PANEL -->
+  <div class="panel" id="qr">
+    <div class="panel-head">
+      <h2>QR Code Generator</h2>
+      <p>Type any URL, text, contact info or Wi-Fi credentials — preview it live, then download as PNG or vector SVG. Pure client-side, nothing leaves your browser.</p>
+    </div>
+
+    <div class="qr-layout" style="display:grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items:start;">
+      <div>
+        <div class="options" style="margin-top:0;">
+          <div class="option-row">
+            <label>Content type</label>
+            <select id="qrType">
+              <option value="text">Text / URL</option>
+              <option value="email">Email</option>
+              <option value="phone">Phone</option>
+              <option value="sms">SMS</option>
+              <option value="wifi">Wi-Fi</option>
+              <option value="vcard">Contact (vCard)</option>
+            </select>
+          </div>
+
+          <!-- Text/URL -->
+          <div class="qr-fields" data-fields="text">
+            <div class="option-row" style="flex-direction:column; align-items:stretch; gap:6px;">
+              <label style="min-width:0;">Text or URL</label>
+              <textarea id="qrText" rows="4" style="padding:10px 12px; border:1px solid var(--ink-line); border-radius:7px; font-family:'IBM Plex Mono', monospace; font-size:13px; background:var(--ink-soft); color:var(--text); resize:vertical;" placeholder="https://example.com/your-pdf-or-drive-link">https://example.com</textarea>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="qr-fields" data-fields="email" style="display:none;">
+            <div class="option-row"><label>To</label><input type="text" id="qrEmailTo" placeholder="[email protected]"></div>
+            <div class="option-row"><label>Subject</label><input type="text" id="qrEmailSubject" placeholder="Optional"></div>
+            <div class="option-row"><label>Body</label><input type="text" id="qrEmailBody" placeholder="Optional"></div>
+          </div>
+
+          <!-- Phone -->
+          <div class="qr-fields" data-fields="phone" style="display:none;">
+            <div class="option-row"><label>Phone</label><input type="text" id="qrPhone" placeholder="+91 98765 43210"></div>
+          </div>
+
+          <!-- SMS -->
+          <div class="qr-fields" data-fields="sms" style="display:none;">
+            <div class="option-row"><label>Number</label><input type="text" id="qrSmsTo" placeholder="+91 98765 43210"></div>
+            <div class="option-row"><label>Message</label><input type="text" id="qrSmsBody" placeholder="Optional"></div>
+          </div>
+
+          <!-- Wi-Fi -->
+          <div class="qr-fields" data-fields="wifi" style="display:none;">
+            <div class="option-row"><label>SSID (network name)</label><input type="text" id="qrWifiSsid" placeholder="MyWiFi"></div>
+            <div class="option-row"><label>Password</label><input type="text" id="qrWifiPass" placeholder="Optional"></div>
+            <div class="option-row">
+              <label>Security</label>
+              <select id="qrWifiSec">
+                <option value="WPA">WPA / WPA2</option>
+                <option value="WEP">WEP</option>
+                <option value="nopass">No password</option>
+              </select>
+            </div>
+            <div class="option-row">
+              <label class="scan-checkbox-row" style="min-width:0;"><input type="checkbox" id="qrWifiHidden"> Hidden network</label>
+            </div>
+          </div>
+
+          <!-- vCard -->
+          <div class="qr-fields" data-fields="vcard" style="display:none;">
+            <div class="option-row"><label>Name</label><input type="text" id="qrVcName" placeholder="Jane Doe"></div>
+            <div class="option-row"><label>Phone</label><input type="text" id="qrVcPhone" placeholder="+91 98765 43210"></div>
+            <div class="option-row"><label>Email</label><input type="text" id="qrVcEmail" placeholder="[email protected]"></div>
+            <div class="option-row"><label>Organization</label><input type="text" id="qrVcOrg" placeholder="Optional"></div>
+            <div class="option-row"><label>URL</label><input type="text" id="qrVcUrl" placeholder="https://..."></div>
+          </div>
+
+          <div class="option-row">
+            <label>Size (px)</label>
+            <input type="number" id="qrSize" value="320" min="80" max="1200" step="20">
+          </div>
+          <div class="option-row">
+            <label>Error correction</label>
+            <select id="qrEcc">
+              <option value="L">Low (~7%)</option>
+              <option value="M" selected>Medium (~15%)</option>
+              <option value="Q">Quartile (~25%)</option>
+              <option value="H">High (~30%)</option>
+            </select>
+          </div>
+          <div class="option-row">
+            <label>Foreground</label>
+            <input type="color" id="qrFg" value="#0D1117" style="width:60px; height:34px; padding:2px; border-radius:7px; border:1px solid var(--ink-line); background:var(--ink-soft);">
+          </div>
+          <div class="option-row">
+            <label>Background</label>
+            <input type="color" id="qrBg" value="#FFFFFF" style="width:60px; height:34px; padding:2px; border-radius:7px; border:1px solid var(--ink-line); background:var(--ink-soft);">
+          </div>
+        </div>
+
+        <div class="scan-action-row" style="margin-top:16px;">
+          <button type="button" class="scan-btn primary" id="qrDownloadPng">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+            Download PNG
+          </button>
+          <button type="button" class="scan-btn" id="qrDownloadSvg">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+            Download SVG
+          </button>
+        </div>
+        <div class="status" id="qrStatus"></div>
+      </div>
+
+      <div>
+        <div class="options" style="margin-top:0; text-align:center; padding:24px;">
+          <div id="qrPreview" style="display:inline-block; padding:18px; background:#fff; border-radius:10px; box-shadow:0 4px 18px rgba(0,0,0,0.12); min-width:200px; min-height:200px; line-height:0;"></div>
+          <div style="margin-top:14px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--text-faint); word-break:break-all;" id="qrContentEcho">https://example.com</div>
+        </div>
+        <div class="hint-text" style="margin-top:12px; text-align:center;">Live preview · updates as you type</div>
+      </div>
+    </div>
+  </div>
+
   </div>
 
   <footer>Files are processed on the server and removed automatically after closing the Tab</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script>
 /* =========================================================
    DOC SCANNER  (premium)
@@ -2950,18 +3017,26 @@ document.getElementById('pdf2wordBtn').onclick = async () => {
 setupDropzone('splitFile', 'splitList', false);
 setupDropzone('videoFile', 'videoList', false);
 
-// Split/Video type toggle
+// Split/Video/Watermark type toggle
 document.querySelectorAll('.split-type-toggle').forEach(toggle => {
   toggle.querySelectorAll('.split-type-btn').forEach(btn => {
     btn.onclick = () => {
       toggle.querySelectorAll('.split-type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const type = btn.dataset.type;
+      const target = btn.dataset.target;
       const parent = toggle.closest('.panel');
       parent.querySelectorAll('.split-option').forEach(opt => opt.classList.remove('active'));
-      const prefix = parent.id === 'split' ? 'split' : 'video';
-      const suffix = type === 'pages' ? 'Pages' : type === 'chunks' ? 'Chunks' : type === 'frames' ? 'Frames' : 'Pdf';
-      parent.querySelector(`#${prefix}${suffix}`).classList.add('active');
+      if (target) {
+        const el = parent.querySelector(`#${target}`);
+        if (el) el.classList.add('active');
+      } else {
+        // Fallback for legacy buttons without data-target
+        const type = btn.dataset.type;
+        const prefix = parent.id === 'split' ? 'split' : 'video';
+        const suffix = type === 'pages' ? 'Pages' : type === 'chunks' ? 'Chunks' : type === 'frames' ? 'Frames' : 'Pdf';
+        const el = parent.querySelector(`#${prefix}${suffix}`);
+        if (el) el.classList.add('active');
+      }
     };
   });
 });
@@ -3066,75 +3141,322 @@ document.getElementById('mp3Btn').onclick = async () => {
   setLoading('mp3Btn', 'mp3Status', false);
 };
 
-// QR Code Generator setup
-setupDropzone('qrLogoFile', 'qrLogoList', false);
+/* =========================================================
+   WATERMARK / LOCK / UNLOCK
+   - Dropzone wiring was missing for these three panels
+   - Submit handlers were also missing
+   - Slider value displays for opacity/scale were not synced
+   ========================================================= */
 
-const qrExamples = {
-  site: 'https://your-site.up.railway.app',
-  drive: 'https://drive.google.com/drive/folders/YOUR_FOLDER_ID',
-  pdf: 'https://drive.google.com/file/d/YOUR_FILE_ID/view',
-};
-document.querySelectorAll('[data-qr-example]').forEach(btn => {
-  btn.onclick = () => {
-    const key = btn.dataset.qrExample;
-    const field = document.getElementById('qrData');
-    if (!field.value.trim()) field.value = qrExamples[key];
-    field.focus();
+// Initialize the missing dropzones
+setupDropzone('watermarkFile', 'watermarkList', false);
+setupDropzone('wmImageFile',  'wmImageList',  false);
+setupDropzone('lockFile',     'lockList',     false);
+setupDropzone('unlockFile',   'unlockList',   false);
+
+// Sync the watermark slider value displays (they show 0.3 as decimal, not %)
+function wireRange(inputId, valId, asDecimal) {
+  const el = document.getElementById(inputId);
+  const out = document.getElementById(valId);
+  if (!el || !out) return;
+  const update = () => {
+    const v = parseInt(el.value, 10);
+    out.textContent = asDecimal ? (v / 100).toFixed(2) : String(v);
   };
-});
-
-function renderQrTicket(id, { filename, sub, url }) {
-  const el = document.getElementById(id);
-  el.className = 'status show';
-  el.innerHTML = `
-    <div class="ticket">
-      <div class="ticket-top">
-        <span class="ticket-label">CLAIM TICKET</span>
-        <span class="ticket-no">No. ${nextTicketNo()}</span>
-        <span class="ticket-ready">READY</span>
-      </div>
-      <div class="ticket-perf"></div>
-      <div class="ticket-bottom" style="align-items:center;">
-        <img src="${url}" alt="QR code" style="width:96px; height:96px; border-radius:6px; background:#fff; padding:4px; margin-right:12px;">
-        <div class="ticket-file">
-          <span class="ticket-filename">${escapeHtml(filename)}</span>
-          <span class="ticket-meta">${escapeHtml(sub)}</span>
-        </div>
-        <a class="ticket-download" href="${url}" download="${escapeHtml(filename)}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
-          Download
-        </a>
-      </div>
-    </div>`;
+  el.addEventListener('input', update);
+  update();
 }
+wireRange('wmOpacity',     'wmOpacityVal',     true);
+wireRange('wmImgOpacity',  'wmImgOpacityVal',  true);
+wireRange('wmScale',       'wmScaleVal',       true);
 
-document.getElementById('qrBtn').onclick = async () => {
-  const data = document.getElementById('qrData').value.trim();
-  if (!data) { setStatus('qrStatus', 'Paste a URL or text to encode', 'error'); return; }
+// Watermark submit
+document.getElementById('watermarkBtn').onclick = async () => {
+  const files = state.watermarkList;
+  if (files.length !== 1) { setStatus('watermarkStatus', 'Select a PDF to watermark', 'error'); return; }
+
+  const isText = document.querySelector('#watermark .split-type-btn.active').dataset.type === 'text';
 
   const fd = new FormData();
-  fd.append('data', data);
-  fd.append('fill_color', document.getElementById('qrFill').value);
-  fd.append('back_color', document.getElementById('qrBack').value);
-  fd.append('box_size', document.getElementById('qrBoxSize').value);
-  fd.append('error_correction', document.getElementById('qrErrorCorrection').value);
+  fd.append('file', files[0]);
+  fd.append('mode', isText ? 'text' : 'image');
 
-  const logoFiles = state.qrLogoList;
-  if (logoFiles && logoFiles.length === 1) {
-    fd.append('logo', logoFiles[0]);
+  if (isText) {
+    fd.append('text',       document.getElementById('wmText').value || 'CONFIDENTIAL');
+    fd.append('font_size',  document.getElementById('wmFontSize').value);
+    fd.append('opacity',    (parseInt(document.getElementById('wmOpacity').value, 10) / 100).toFixed(2));
+    fd.append('angle',      document.getElementById('wmAngle').value);
+    fd.append('spacing',    document.getElementById('wmSpacing').value);
+    fd.append('color',      document.getElementById('wmColor').value || '128,128,128');
+  } else {
+    const imgFiles = state.wmImageList;
+    if (imgFiles.length !== 1) { setStatus('watermarkStatus', 'Pick a watermark image', 'error'); return; }
+    fd.append('image',    imgFiles[0]);
+    fd.append('opacity',  (parseInt(document.getElementById('wmImgOpacity').value, 10) / 100).toFixed(2));
+    fd.append('position', document.getElementById('wmPosition').value);
+    fd.append('scale',    (parseInt(document.getElementById('wmScale').value, 10) / 100).toFixed(2));
   }
 
-  setLoading('qrBtn', 'qrStatus', true);
+  setLoading('watermarkBtn', 'watermarkStatus', true);
   try {
-    const blob = await postForm('/qr-generate', fd);
-    const name = 'qrcode.png';
+    const blob = await postForm('/watermark', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const name = `${base}_watermarked.pdf`;
     const url = downloadBlob(blob, name);
-    renderQrTicket('qrStatus', { filename: name, sub: `QR code generated · ${fmtSize(blob.size)}`, url });
+    renderTicket('watermarkStatus', { filename: name, sub: `Watermark applied · ${fmtSize(blob.size)}`, url });
   } catch (e) {
-    setStatus('qrStatus', e.message, 'error');
+    setStatus('watermarkStatus', e.message, 'error');
   }
-  setLoading('qrBtn', 'qrStatus', false);
+  setLoading('watermarkBtn', 'watermarkStatus', false);
 };
+
+// Lock submit
+document.getElementById('lockBtn').onclick = async () => {
+  const files = state.lockList;
+  if (files.length !== 1) { setStatus('lockStatus', 'Select a PDF to lock', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('file',            files[0]);
+  fd.append('user_password',   document.getElementById('lockUserPass').value);
+  fd.append('owner_password',  document.getElementById('lockOwnerPass').value);
+  fd.append('allow_print',     document.getElementById('lockPrint').value);
+  fd.append('allow_copy',      document.getElementById('lockCopy').value);
+  fd.append('allow_modify',    document.getElementById('lockModify').value);
+  fd.append('allow_annotate',  document.getElementById('lockAnnotate').value);
+  fd.append('allow_form',      document.getElementById('lockForm').value);
+
+  setLoading('lockBtn', 'lockStatus', true);
+  try {
+    const blob = await postForm('/lock-pdf', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const name = `${base}_locked.pdf`;
+    const url = downloadBlob(blob, name);
+    renderTicket('lockStatus', { filename: name, sub: `Encrypted · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('lockStatus', e.message, 'error');
+  }
+  setLoading('lockBtn', 'lockStatus', false);
+};
+
+// Unlock submit
+document.getElementById('unlockBtn').onclick = async () => {
+  const files = state.unlockList;
+  if (files.length !== 1) { setStatus('unlockStatus', 'Select an encrypted PDF', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('file',     files[0]);
+  fd.append('password', document.getElementById('unlockPass').value);
+
+  setLoading('unlockBtn', 'unlockStatus', true);
+  try {
+    const blob = await postForm('/unlock-pdf', fd);
+    const base = files[0].name.replace(/\.[^.]+$/, '');
+    const name = `${base}_unlocked.pdf`;
+    const url = downloadBlob(blob, name);
+    renderTicket('unlockStatus', { filename: name, sub: `Decrypted · ${fmtSize(blob.size)}`, url });
+  } catch (e) {
+    setStatus('unlockStatus', e.message, 'error');
+  }
+  setLoading('unlockBtn', 'unlockStatus', false);
+};
+
+/* =========================================================
+   QR CODE GENERATOR (pure client-side)
+   - Live preview
+   - Type-specific payloads (text/email/phone/sms/wifi/vcard)
+   - Configurable size, error-correction, fg/bg colors
+   - Download as PNG or vector SVG
+   ========================================================= */
+const QR = (() => {
+  const $ = (id) => document.getElementById(id);
+  let currentMatrix = null;   // { size, modules: number[][], size } from qrcode lib
+  let currentPayload = '';
+
+  function getPayload() {
+    const type = $('qrType').value;
+    if (type === 'text')   return $('qrText').value.trim();
+    if (type === 'email') {
+      const to = $('qrEmailTo').value.trim();
+      if (!to) return '';
+      const sub = encodeURIComponent($('qrEmailSubject').value.trim());
+      const body = encodeURIComponent($('qrEmailBody').value.trim());
+      return `mailto:${to}${sub || body ? '?' : ''}${sub ? `subject=${sub}` : ''}${sub && body ? '&' : ''}${body ? `body=${body}` : ''}`;
+    }
+    if (type === 'phone') {
+      const p = $('qrPhone').value.trim();
+      return p ? `tel:${p.replace(/\s+/g, '')}` : '';
+    }
+    if (type === 'sms') {
+      const p = $('qrSmsTo').value.trim();
+      if (!p) return '';
+      const body = encodeURIComponent($('qrSmsBody').value.trim());
+      return `sms:${p.replace(/\s+/g, '')}${body ? `?body=${body}` : ''}`;
+    }
+    if (type === 'wifi') {
+      const ssid = $('qrWifiSsid').value;
+      if (!ssid) return '';
+      const sec  = $('qrWifiSec').value;
+      const pass = $('qrWifiPass').value;
+      const hidden = $('qrWifiHidden').checked ? 'true' : 'false';
+      return `WIFI:T:${sec};S:${ssid};P:${pass};H:${hidden};;`;
+    }
+    if (type === 'vcard') {
+      const name  = $('qrVcName').value.trim();
+      if (!name) return '';
+      const phone = $('qrVcPhone').value.trim();
+      const email = $('qrVcEmail').value.trim();
+      const org   = $('qrVcOrg').value.trim();
+      const url   = $('qrVcUrl').value.trim();
+      const parts = name.split(/\s+/);
+      const first = parts[0] || '';
+      const last  = parts.slice(1).join(' ');
+      const lines = [
+        'BEGIN:VCARD', 'VERSION:3.0',
+        `N:${last};${first};;;`,
+        `FN:${name}`,
+      ];
+      if (phone) lines.push(`TEL;TYPE=CELL:${phone}`);
+      if (email) lines.push(`EMAIL:${email}`);
+      if (org)   lines.push(`ORG:${org}`);
+      if (url)   lines.push(`URL:${url}`);
+      lines.push('END:VCARD');
+      return lines.join('\n');
+    }
+    return '';
+  }
+
+  function buildMatrix(payload) {
+    if (!payload) return null;
+    // Type numbers from the qrcode-generator lib
+    const eccMap = { L: 0, M: 1, Q: 2, H: 3 };
+    const ecc = eccMap[$('qrEcc').value] ?? 1;
+    const qr = qrcode(0, ecc);
+    qr.addData(payload);
+    qr.make();
+    const size = qr.getModuleCount();
+    const modules = [];
+    for (let r = 0; r < size; r++) {
+      const row = [];
+      for (let c = 0; c < size; c++) row.push(qr.isDark(r, c) ? 1 : 0);
+      modules.push(row);
+    }
+    return { size, modules, qr };
+  }
+
+  function renderPreview() {
+    const payload = getPayload();
+    currentPayload = payload;
+    $('qrContentEcho').textContent = payload || '(empty)';
+
+    const preview = $('qrPreview');
+    preview.innerHTML = '';
+    if (!payload) {
+      preview.style.background = 'repeating-linear-gradient(45deg, #f3f4f6 0 8px, #e5e7eb 8px 16px)';
+      currentMatrix = null;
+      return;
+    }
+    preview.style.background = '#fff';
+
+    const mat = buildMatrix(payload);
+    if (!mat) return;
+    currentMatrix = mat;
+
+    const size = parseInt($('qrSize').value, 10) || 320;
+    const fg = $('qrFg').value;
+    const bg = $('qrBg').value;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    canvas.style.width = size + 'px';
+    canvas.style.height = size + 'px';
+    canvas.style.imageRendering = 'pixelated';
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = fg;
+    const cell = size / mat.size;
+    for (let r = 0; r < mat.size; r++) {
+      for (let c = 0; c < mat.size; c++) {
+        if (mat.modules[r][c]) ctx.fillRect(Math.floor(c * cell), Math.floor(r * cell), Math.ceil(cell), Math.ceil(cell));
+      }
+    }
+    preview.appendChild(canvas);
+  }
+
+  function buildSVG() {
+    if (!currentMatrix) return null;
+    const { size, modules } = currentMatrix;
+    const fg = $('qrFg').value;
+    const bg = $('qrBg').value;
+    const cell = 10;
+    const px = size * cell;
+    let path = '';
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (modules[r][c]) path += `M${c * cell} ${r * cell}h${cell}v${cell}h-${cell}z`;
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${px} ${px}" width="${px}" height="${px}"><rect width="100%" height="100%" fill="${bg}"/><path d="${path}" fill="${fg}"/></svg>`;
+  }
+
+  function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  function bind() {
+    // Live re-render on any input change
+    document.querySelectorAll('#qr input, #qr select, #qr textarea').forEach(el => {
+      el.addEventListener('input', renderPreview);
+      el.addEventListener('change', renderPreview);
+    });
+
+    // Show only the right fields for the selected type
+    $('qrType').addEventListener('change', () => {
+      const t = $('qrType').value;
+      document.querySelectorAll('.qr-fields').forEach(f => {
+        f.style.display = (f.dataset.fields === t) ? '' : 'none';
+      });
+      renderPreview();
+    });
+
+    // PNG download
+    $('qrDownloadPng').addEventListener('click', () => {
+      if (!currentMatrix || !currentPayload) { setStatus('qrStatus', 'Enter content first', 'error'); return; }
+      const canvas = $('qrPreview').querySelector('canvas');
+      if (!canvas) return;
+      canvas.toBlob((blob) => {
+        if (!blob) { setStatus('qrStatus', 'Could not generate PNG', 'error'); return; }
+        const safe = currentPayload.replace(/[^a-z0-9]+/gi, '_').slice(0, 40) || 'qr';
+        downloadBlob(blob, `qr_${safe}.png`);
+        setStatus('qrStatus', 'PNG downloaded', 'info');
+      }, 'image/png');
+    });
+
+    // SVG download
+    $('qrDownloadSvg').addEventListener('click', () => {
+      if (!currentMatrix || !currentPayload) { setStatus('qrStatus', 'Enter content first', 'error'); return; }
+      const svg = buildSVG();
+      if (!svg) return;
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const safe = currentPayload.replace(/[^a-z0-9]+/gi, '_').slice(0, 40) || 'qr';
+      downloadBlob(blob, `qr_${safe}.svg`);
+      setStatus('qrStatus', 'SVG downloaded', 'info');
+    });
+
+    renderPreview();
+  }
+
+  return { bind };
+})();
+QR.bind();
 
 (function initThemeSwitcher() {
   const root = document.documentElement;
