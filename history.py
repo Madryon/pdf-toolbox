@@ -1,48 +1,61 @@
+from pathlib import Path
+
 from flask import Blueprint, jsonify
 from flask_login import current_user, login_required
 
-from extensions import db
-from models import FileHistory
-
-history_bp = Blueprint("history", __name__)
+from models import FileHistory, db
 
 
-@history_bp.route("/history", methods=["GET"])
+history_bp = Blueprint("history", __name__, url_prefix="/history")
+
+
+def create_history_entry(tool_name: str, output_name: str, output_path: str) -> None:
+    if not current_user.is_authenticated:
+        return
+    item = FileHistory(
+        user_id=current_user.id,
+        tool_name=tool_name,
+        output_name=output_name,
+        output_path=output_path,
+    )
+    db.session.add(item)
+    db.session.commit()
+
+
+@history_bp.get("/")
 @login_required
-def get_history():
-    rows = (
-        FileHistory.query.filter_by(user_id=current_user.id)
-        .order_by(FileHistory.created_at.desc())
+def list_history():
+    entries = (
+        FileHistory.query
+        .filter_by(user_id=current_user.id)
+        .order_by(FileHistory.created_at.desc(), FileHistory.id.desc())
         .all()
     )
-    return jsonify(
-        [
-            {
-                "id": row.id,
-                "tool_name": row.tool_name,
-                "output_name": row.output_name,
-                "output_path": row.output_path,
-                "created_at": row.created_at.isoformat(),
-            }
-            for row in rows
-        ]
-    )
+    return jsonify([
+        {
+            "id": entry.id,
+            "tool_name": entry.tool_name,
+            "output_name": entry.output_name,
+            "output_path": entry.output_path,
+            "created_at": entry.created_at.isoformat() + "Z",
+        }
+        for entry in entries
+    ])
 
 
-@history_bp.route("/history/<int:history_id>", methods=["DELETE"])
-@login_required
-def delete_history_item(history_id):
-    row = FileHistory.query.filter_by(id=history_id, user_id=current_user.id).first()
-    if not row:
-        return jsonify({"error": "history item not found"}), 404
-    db.session.delete(row)
-    db.session.commit()
-    return jsonify({"ok": True})
-
-
-@history_bp.route("/history/", methods=["DELETE"])
+@history_bp.delete("/")
 @login_required
 def clear_history():
-    FileHistory.query.filter_by(user_id=current_user.id).delete()
+    entries = FileHistory.query.filter_by(user_id=current_user.id).all()
+    deleted = 0
+    for entry in entries:
+        path = Path(entry.output_path)
+        try:
+            if path.exists() and path.is_file():
+                path.unlink()
+        except OSError:
+            pass
+        db.session.delete(entry)
+        deleted += 1
     db.session.commit()
-    return jsonify({"ok": True})
+    return jsonify({"deleted": deleted})

@@ -5,16 +5,14 @@ from pathlib import Path
 from flask import Flask, request, send_file, render_template, jsonify, g
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_login import current_user
 from werkzeug.utils import secure_filename
 import pdftool
 import pdftool_scan as scanner
 import pdftool_video as vidtool
-from auth import auth_bp
-from cleanup_scheduler import start_cleanup_scheduler
-from extensions import db, login_manager
-from history import history_bp
-from models import FileHistory
+from auth import login_manager, auth_bp
+from history import history_bp, create_history_entry
+from models import db
+from scheduler import start_cleanup_scheduler
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -34,9 +32,12 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-me")
 
 db.init_app(app)
 login_manager.init_app(app)
+limiter = Limiter(get_remote_address, app=app, default_limits=[])
 app.register_blueprint(auth_bp)
 app.register_blueprint(history_bp)
-limiter = Limiter(get_remote_address, app=app)
+
+with app.app_context():
+    db.create_all()
 
 
 def _save_upload(file_storage, job_dir, original_name):
@@ -59,6 +60,7 @@ def _cleanup_old(max_age_seconds=3600):
                             sub.unlink()
                         except OSError:
                             pass
+
                     try:
                         child.rmdir()
                     except OSError:
@@ -69,9 +71,12 @@ def _cleanup_old(max_age_seconds=3600):
                 pass
 
 
+start_cleanup_scheduler(_cleanup_old)
+
+
 @app.after_request
 def _log_history(response):
-    if not current_user.is_authenticated:
+    if response.status_code >= 400:
         return response
     tool_name = getattr(g, "tool_name", None)
     output_name = getattr(g, "output_name", None)
@@ -79,23 +84,10 @@ def _log_history(response):
     if not tool_name or not output_name or not output_path:
         return response
     try:
-        db.session.add(
-            FileHistory(
-                user_id=current_user.id,
-                tool_name=tool_name,
-                output_name=output_name,
-                output_path=output_path,
-            )
-        )
-        db.session.commit()
+        create_history_entry(tool_name, output_name, output_path)
     except Exception:
-        db.session.rollback()
+        pass
     return response
-
-
-with app.app_context():
-    db.create_all()
-start_cleanup_scheduler(_cleanup_old)
 
 
 @app.route("/")
@@ -230,10 +222,13 @@ def convert_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     if len(paths) == 1:
+        safe_path = Path(paths[0]).resolve()
+        if OUTPUT_DIR.resolve() not in safe_path.parents:
+            return jsonify({"error": "invalid output path"}), 400
         g.tool_name = "convert"
         g.output_name = out_name
-        g.output_path = str(out_path)
-        return send_file(str(out_path), as_attachment=True, download_name=out_name)
+        g.output_path = str(safe_path)
+        return send_file(str(safe_path), as_attachment=True, download_name=out_name)
     zip_path = OUTPUT_DIR / f"{job_id}_converted.zip"
     pdftool.make_zip(paths, str(zip_path))
     g.tool_name = "convert"
@@ -364,12 +359,15 @@ def split_route():
             return jsonify({"error": "no output files generated"}), 400
 
         if len(paths) == 1:
+            safe_path = Path(paths[0]).resolve()
+            if out_dir.resolve() not in safe_path.parents:
+                return jsonify({"error": "invalid output path"}), 400
             g.tool_name = "split"
-            g.output_name = Path(paths[0]).name
-            g.output_path = str(paths[0])
+            g.output_name = safe_path.name
+            g.output_path = str(safe_path)
             return send_file(
-                paths[0], as_attachment=True,
-                download_name=Path(paths[0]).name,
+                str(safe_path), as_attachment=True,
+                download_name=safe_path.name,
                 mimetype="application/pdf",
             )
 

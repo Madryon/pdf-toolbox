@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+uploads/
+outputs/
+app.db
