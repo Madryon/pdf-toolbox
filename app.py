@@ -2,11 +2,19 @@ import os
 import time
 import uuid
 from pathlib import Path
-from flask import Flask, request, send_file, render_template, jsonify
+from flask import Flask, request, send_file, render_template, jsonify, g
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_login import current_user
 from werkzeug.utils import secure_filename
 import pdftool
 import pdftool_scan as scanner
 import pdftool_video as vidtool
+from auth import auth_bp
+from cleanup_scheduler import start_cleanup_scheduler
+from extensions import db, login_manager
+from history import history_bp
+from models import FileHistory
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -17,6 +25,18 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 app = Flask(__name__, template_folder=str(BASE_DIR / "templates"))
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024
 app.config["JSON_SORT_KEYS"] = False
+database_url = os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'app.db'}")
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-me")
+
+db.init_app(app)
+login_manager.init_app(app)
+app.register_blueprint(auth_bp)
+app.register_blueprint(history_bp)
+limiter = Limiter(get_remote_address, app=app)
 
 
 def _save_upload(file_storage, job_dir, original_name):
@@ -47,6 +67,35 @@ def _cleanup_old(max_age_seconds=3600):
                     child.unlink()
             except OSError:
                 pass
+
+
+@app.after_request
+def _log_history(response):
+    if not current_user.is_authenticated:
+        return response
+    tool_name = getattr(g, "tool_name", None)
+    output_name = getattr(g, "output_name", None)
+    output_path = getattr(g, "output_path", None)
+    if not tool_name or not output_name or not output_path:
+        return response
+    try:
+        db.session.add(
+            FileHistory(
+                user_id=current_user.id,
+                tool_name=tool_name,
+                output_name=output_name,
+                output_path=output_path,
+            )
+        )
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return response
+
+
+with app.app_context():
+    db.create_all()
+start_cleanup_scheduler(_cleanup_old)
 
 
 @app.route("/")
@@ -81,6 +130,9 @@ def merge_route():
         pdftool.merge_pdfs(inputs, str(output_path))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    g.tool_name = "merge"
+    g.output_name = "merged.pdf"
+    g.output_path = str(output_path)
     return send_file(
         str(output_path),
         as_attachment=True,
@@ -127,6 +179,9 @@ def compress_route():
             return jsonify({"error": f"unsupported file type: {ext}"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    g.tool_name = "compress"
+    g.output_name = out_name
+    g.output_path = str(out_path)
     return send_file(str(out_path), as_attachment=True, download_name=out_name)
 
 
@@ -156,6 +211,9 @@ def convert_route():
             pdftool.make_zip(paths, str(zip_path))
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+        g.tool_name = "convert"
+        g.output_name = f"{in_path.stem}_pages.zip"
+        g.output_path = str(zip_path)
         return send_file(
             str(zip_path), as_attachment=True,
             download_name=f"{in_path.stem}_pages.zip",
@@ -172,9 +230,15 @@ def convert_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     if len(paths) == 1:
+        g.tool_name = "convert"
+        g.output_name = out_name
+        g.output_path = str(paths[0])
         return send_file(paths[0], as_attachment=True, download_name=out_name)
     zip_path = OUTPUT_DIR / f"{job_id}_converted.zip"
     pdftool.make_zip(paths, str(zip_path))
+    g.tool_name = "convert"
+    g.output_name = f"{in_path.stem}_converted.zip"
+    g.output_path = str(zip_path)
     return send_file(
         str(zip_path), as_attachment=True,
         download_name=f"{in_path.stem}_converted.zip",
@@ -199,6 +263,9 @@ def pdf_to_word_route():
         pdftool.pdf_to_word(str(in_path), str(out_path))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    g.tool_name = "pdf-to-word"
+    g.output_name = out_name
+    g.output_path = str(out_path)
     return send_file(
         str(out_path),
         as_attachment=True,
@@ -231,6 +298,9 @@ def images_to_pdf_route():
         pdftool.images_to_pdf(inputs, str(out_path))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    g.tool_name = "images-to-pdf"
+    g.output_name = "images.pdf"
+    g.output_path = str(out_path)
     return send_file(
         str(out_path), as_attachment=True,
         download_name="images.pdf", mimetype="application/pdf",
@@ -294,6 +364,9 @@ def split_route():
             return jsonify({"error": "no output files generated"}), 400
 
         if len(paths) == 1:
+            g.tool_name = "split"
+            g.output_name = Path(paths[0]).name
+            g.output_path = str(paths[0])
             return send_file(
                 paths[0], as_attachment=True,
                 download_name=Path(paths[0]).name,
@@ -302,6 +375,9 @@ def split_route():
 
         zip_path = OUTPUT_DIR / f"{job_id}_split.zip"
         pdftool.make_zip(paths, str(zip_path))
+        g.tool_name = "split"
+        g.output_name = f"{in_path.stem}_split.zip"
+        g.output_path = str(zip_path)
         return send_file(
             str(zip_path), as_attachment=True,
             download_name=f"{in_path.stem}_split.zip",
@@ -314,6 +390,7 @@ def split_route():
 
 # NEW: Video to Images route
 @app.route("/video-to-images", methods=["POST"])
+@limiter.limit("5 per minute")
 def video_to_images_route():
     f = request.files.get("file")
     if not f or not f.filename:
@@ -354,6 +431,9 @@ def video_to_images_route():
 
         zip_path = OUTPUT_DIR / f"{job_id}_frames.zip"
         pdftool.make_zip(paths, str(zip_path))
+        g.tool_name = "video-to-images"
+        g.output_name = f"{in_path.stem}_frames.zip"
+        g.output_path = str(zip_path)
         return send_file(
             str(zip_path), as_attachment=True,
             download_name=f"{in_path.stem}_frames.zip",
@@ -365,6 +445,7 @@ def video_to_images_route():
 
 # NEW: Video to PDF route
 @app.route("/video-to-pdf", methods=["POST"])
+@limiter.limit("5 per minute")
 def video_to_pdf_route():
     f = request.files.get("file")
     if not f or not f.filename:
@@ -398,6 +479,9 @@ def video_to_pdf_route():
             quality=quality, max_frames=max_frames,
             fps=target_fps, max_dimension=max_dim
         )
+        g.tool_name = "video-to-pdf"
+        g.output_name = out_name
+        g.output_path = str(out_path)
         return send_file(
             str(out_path), as_attachment=True,
             download_name=out_name,
@@ -409,6 +493,7 @@ def video_to_pdf_route():
 
 # NEW: Video to MP3 (extract audio from an uploaded video file via ffmpeg)
 @app.route("/video-to-mp3", methods=["POST"])
+@limiter.limit("5 per minute")
 def video_to_mp3_route():
     f = request.files.get("file")
     if not f or not f.filename:
@@ -429,6 +514,9 @@ def video_to_mp3_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    g.tool_name = "video-to-mp3"
+    g.output_name = out_name
+    g.output_path = str(out_path)
     return send_file(
         str(out_path), as_attachment=True,
         download_name=out_name, mimetype="audio/mpeg",
@@ -479,6 +567,9 @@ def watermark_text_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    g.tool_name = "watermark-text"
+    g.output_name = out_name
+    g.output_path = str(out_path)
     return send_file(
         str(out_path), as_attachment=True,
         download_name=out_name,
@@ -523,6 +614,9 @@ def watermark_image_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    g.tool_name = "watermark-image"
+    g.output_name = out_name
+    g.output_path = str(out_path)
     return send_file(
         str(out_path), as_attachment=True,
         download_name=out_name,
@@ -579,6 +673,9 @@ def lock_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    g.tool_name = "lock"
+    g.output_name = out_name
+    g.output_path = str(out_path)
     return send_file(
         str(out_path), as_attachment=True,
         download_name=out_name,
@@ -609,6 +706,9 @@ def unlock_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    g.tool_name = "unlock"
+    g.output_name = out_name
+    g.output_path = str(out_path)
     return send_file(
         str(out_path), as_attachment=True,
         download_name=out_name,
@@ -698,6 +798,7 @@ def scan_process_route():
 
 
 @app.route("/scan/build", methods=["POST"])
+@limiter.limit("5 per minute")
 def scan_build_route():
     """
     Build the final DOCX from one or more processed scan images.
@@ -739,6 +840,9 @@ def scan_build_route():
             scanner.images_to_pdf_simple(page_paths, str(out_path))
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+        g.tool_name = "scan/build"
+        g.output_name = out_name
+        g.output_path = str(out_path)
         return send_file(
             str(out_path), as_attachment=True,
             download_name=out_name,
@@ -756,6 +860,9 @@ def scan_build_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    g.tool_name = "scan/build"
+    g.output_name = out_name
+    g.output_path = str(out_path)
     return send_file(
         str(out_path), as_attachment=True,
         download_name=out_name,
@@ -818,6 +925,9 @@ def qr_generate_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    g.tool_name = "qr-generate"
+    g.output_name = "qrcode.png"
+    g.output_path = str(out_path)
     return send_file(
         str(out_path), as_attachment=True,
         download_name="qrcode.png",
