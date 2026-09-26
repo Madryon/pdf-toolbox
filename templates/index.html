@@ -1327,6 +1327,307 @@
     font-family: 'IBM Plex Sans', sans-serif;
     font-size: 13px;
   }
+
+  /* =========================================================
+     AUTH BAR & MODALS
+     ========================================================= */
+  .auth-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 8px 0 0;
+    font-size: 13px;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .auth-bar .auth-user {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .auth-bar .auth-user strong {
+    color: var(--brass);
+  }
+  .auth-bar button {
+    border: 1px solid var(--ink-line);
+    background: var(--ink-soft);
+    color: var(--text);
+    padding: 5px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .auth-bar button:hover {
+    border-color: var(--brass);
+    color: var(--brass);
+  }
+  .auth-bar button.auth-logout {
+    border-color: var(--stamp);
+    color: var(--stamp);
+  }
+  .auth-bar button.auth-logout:hover {
+    background: var(--stamp);
+    color: #fff;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open {
+    display: flex;
+    animation: rise 0.2s ease;
+  }
+  .modal-box {
+    background: var(--ink-soft);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius);
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  [data-theme="baddie"] .modal-box {
+    background: rgba(20, 0, 40, 0.85);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 46, 147, 0.3);
+    box-shadow: 0 8px 32px rgba(176, 38, 255, 0.3);
+  }
+  .modal-box h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 20px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .modal-box p.modal-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 18px;
+  }
+  .modal-box .form-group {
+    margin-bottom: 14px;
+  }
+  .modal-box label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .modal-box input[type="text"],
+  .modal-box input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-sm);
+    background: var(--ink);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .modal-box input:focus {
+    border-color: var(--brass);
+  }
+  .modal-box .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .modal-box .btn-primary {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--stamp);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .modal-box .btn-primary:hover {
+    background: var(--stamp-deep);
+  }
+  .modal-box .btn-secondary {
+    padding: 10px 16px;
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .modal-box .btn-secondary:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
+  .modal-box .modal-error {
+    color: var(--stamp);
+    font-size: 12.5px;
+    margin-top: 8px;
+    min-height: 18px;
+  }
+  .modal-box .modal-toggle {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .modal-box .modal-toggle a {
+    color: var(--brass);
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .modal-box .modal-toggle a:hover {
+    text-decoration: underline;
+  }
+
+  /* History panel */
+  .history-panel {
+    display: none;
+    background: var(--ink-soft);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius);
+    padding: 24px 22px;
+    margin-top: 18px;
+    animation: rise 0.25s ease;
+  }
+  .history-panel.open { display: block; }
+  [data-theme="baddie"] .history-panel {
+    background: rgba(20, 0, 40, 0.55);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 46, 147, 0.28);
+  }
+  .history-panel h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .history-panel h3 .h-count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    background: var(--ink-raised);
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .history-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ink-line);
+    font-size: 13px;
+    transition: background 0.1s;
+  }
+  .history-list li:last-child { border-bottom: none; }
+  .history-list li:hover { background: var(--ink-raised); border-radius: var(--radius-sm); }
+  .history-list .h-tool {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brass);
+    background: var(--ink-raised);
+    padding: 3px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    min-width: 80px;
+    text-align: center;
+  }
+  .history-list .h-name {
+    flex: 1;
+    color: var(--text);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .history-list .h-date {
+    color: var(--text-faint);
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .history-list .h-delete {
+    border: none;
+    background: transparent;
+    color: var(--text-faint);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+  }
+  .history-list .h-delete:hover {
+    color: var(--stamp);
+    background: var(--ink-raised);
+  }
+  .history-empty {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+    padding: 20px 0;
+  }
+  .history-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    justify-content: flex-end;
+  }
+  .history-actions button {
+    border: 1px solid var(--ink-line);
+    background: transparent;
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .history-actions button:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
+  .history-actions button.danger {
+    border-color: var(--stamp);
+    color: var(--stamp);
+  }
+  .history-actions button.danger:hover {
+    background: var(--stamp);
+    color: #fff;
+  }
 </style>
 </head>
 <body>
@@ -1358,7 +1659,51 @@
       <p id="headerSub">ALL YOUR TOOLS IN ONE PLACE &middot; CLICK ANY CARD TO START</p>
     </div>
   </header>
+
+  <!-- Auth bar: login/register or user info -->
+  <div class="auth-bar" id="authBar">
+    <!-- JS will populate this -->
+  </div>
+
+  <!-- History panel (shown when logged-in user clicks History) -->
+  <div class="history-panel" id="historyPanel">
+    <h3>📁 File History <span class="h-count" id="historyCount">0</span></h3>
+    <ul class="history-list" id="historyList">
+      <li class="history-empty">No files yet. Use a tool to see your history.</li>
+    </ul>
+    <div class="history-actions" id="historyActions" style="display:none">
+      <button type="button" onclick="Auth.refreshHistory()">↻ Refresh</button>
+      <button type="button" class="danger" onclick="Auth.clearAllHistory()">Clear All</button>
+    </div>
+  </div>
+
   <div class="rule"></div>
+
+  <!-- Auth modal (login / register) -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal-box">
+      <h2 id="authModalTitle">Log In</h2>
+      <p class="modal-sub" id="authModalSub">Sign in to track your file history</p>
+      <form id="authForm" autocomplete="off">
+        <div class="form-group">
+          <label for="authUsername">Username</label>
+          <input type="text" id="authUsername" name="username" placeholder="Enter username" required>
+        </div>
+        <div class="form-group">
+          <label for="authPassword">Password</label>
+          <input type="password" id="authPassword" name="password" placeholder="Enter password" required>
+        </div>
+        <div class="modal-error" id="authError"></div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary" id="authSubmitBtn">Log In</button>
+          <button type="button" class="btn-secondary" onclick="Auth.closeModal()">Cancel</button>
+        </div>
+      </form>
+      <div class="modal-toggle" id="authToggle">
+        Don't have an account? <a onclick="Auth.switchMode('register')">Register</a>
+      </div>
+    </div>
+  </div>
 
   <!-- ==================== HOME VIEW (card directory) ==================== -->
   <div id="homeView">
@@ -3486,6 +3831,230 @@ QR.bind();
   let saved = 'light';
   try { saved = localStorage.getItem('pdf-toolbox-theme') || 'light'; } catch (e) {}
   apply(saved);
+})();
+
+/* =========================================================
+   AUTH & HISTORY MODULE
+   ========================================================= */
+const Auth = (function () {
+  let currentUser = null;
+  let historyOpen = false;
+  let authMode = 'login'; // 'login' or 'register'
+
+  const bar      = () => document.getElementById('authBar');
+  const modal    = () => document.getElementById('authModal');
+  const panel    = () => document.getElementById('historyPanel');
+  const form     = () => document.getElementById('authForm');
+  const errEl    = () => document.getElementById('authError');
+  const titleEl  = () => document.getElementById('authModalTitle');
+  const subEl    = () => document.getElementById('authModalSub');
+  const submitEl = () => document.getElementById('authSubmitBtn');
+  const toggleEl = () => document.getElementById('authToggle');
+  const listEl   = () => document.getElementById('historyList');
+  const countEl  = () => document.getElementById('historyCount');
+  const actionsEl = () => document.getElementById('historyActions');
+
+  /* --- Render auth bar --- */
+  function renderBar() {
+    const b = bar();
+    if (!b) return;
+    if (currentUser) {
+      b.innerHTML = `
+        <span class="auth-user">Welcome, <strong>${esc(currentUser.username)}</strong></span>
+        <button type="button" onclick="Auth.toggleHistory()">📁 History</button>
+        <button type="button" class="auth-logout" onclick="Auth.logout()">Logout</button>
+      `;
+    } else {
+      b.innerHTML = `
+        <button type="button" onclick="Auth.openModal('login')">Log In</button>
+        <button type="button" onclick="Auth.openModal('register')">Register</button>
+      `;
+    }
+  }
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  /* --- Modal control --- */
+  function openModal(mode) {
+    authMode = mode || 'login';
+    const m = modal();
+    errEl().textContent = '';
+    form().reset();
+    if (authMode === 'register') {
+      titleEl().textContent = 'Create Account';
+      subEl().textContent = 'Sign up to track your processed files';
+      submitEl().textContent = 'Register';
+      toggleEl().innerHTML = 'Already have an account? <a onclick="Auth.switchMode(\'login\')">Log In</a>';
+    } else {
+      titleEl().textContent = 'Log In';
+      subEl().textContent = 'Sign in to track your file history';
+      submitEl().textContent = 'Log In';
+      toggleEl().innerHTML = 'Don\'t have an account? <a onclick="Auth.switchMode(\'register\')">Register</a>';
+    }
+    m.classList.add('open');
+    setTimeout(() => document.getElementById('authUsername').focus(), 100);
+  }
+
+  function closeModal() {
+    modal().classList.remove('open');
+    errEl().textContent = '';
+  }
+
+  function switchMode(mode) {
+    openModal(mode);
+  }
+
+  /* --- Auth API calls --- */
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const username = document.getElementById('authUsername').value.trim();
+    const password = document.getElementById('authPassword').value;
+    if (!username || !password) {
+      errEl().textContent = 'Username and password are required';
+      return;
+    }
+    const endpoint = authMode === 'register' ? '/auth/register' : '/auth/login';
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errEl().textContent = data.error || 'Something went wrong';
+        return;
+      }
+      currentUser = { id: data.id, username: data.username };
+      closeModal();
+      renderBar();
+    } catch (err) {
+      errEl().textContent = 'Network error. Please try again.';
+    }
+  }
+
+  async function logout() {
+    try {
+      await fetch('/auth/logout', { method: 'POST' });
+    } catch (e) { /* ignore */ }
+    currentUser = null;
+    historyOpen = false;
+    panel().classList.remove('open');
+    renderBar();
+  }
+
+  async function checkSession() {
+    try {
+      const res = await fetch('/auth/me');
+      const data = await res.json();
+      if (data.authenticated) {
+        currentUser = { id: data.id, username: data.username };
+      }
+    } catch (e) { /* ignore */ }
+    renderBar();
+  }
+
+  /* --- History --- */
+  function toggleHistory() {
+    historyOpen = !historyOpen;
+    const p = panel();
+    if (historyOpen) {
+      p.classList.add('open');
+      refreshHistory();
+    } else {
+      p.classList.remove('open');
+    }
+  }
+
+  async function refreshHistory() {
+    if (!currentUser) return;
+    const list = listEl();
+    const count = countEl();
+    const actions = actionsEl();
+    list.innerHTML = '<li class="history-empty">Loading…</li>';
+    try {
+      const res = await fetch('/history/');
+      if (res.status === 401) {
+        list.innerHTML = '<li class="history-empty">Please log in to view history.</li>';
+        count.textContent = '0';
+        actions.style.display = 'none';
+        return;
+      }
+      const data = await res.json();
+      count.textContent = data.length;
+      if (data.length === 0) {
+        list.innerHTML = '<li class="history-empty">No files yet. Use a tool to see your history.</li>';
+        actions.style.display = 'none';
+        return;
+      }
+      actions.style.display = 'flex';
+      list.innerHTML = data.map(entry => {
+        const d = new Date(entry.created_at);
+        const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `<li>
+          <span class="h-tool">${esc(entry.tool_name)}</span>
+          <span class="h-name" title="${esc(entry.output_name)}">${esc(entry.output_name)}</span>
+          <span class="h-date">${dateStr}</span>
+          <button class="h-delete" onclick="Auth.deleteEntry(${entry.id})" title="Delete">✕</button>
+        </li>`;
+      }).join('');
+    } catch (err) {
+      list.innerHTML = '<li class="history-empty">Failed to load history.</li>';
+    }
+  }
+
+  async function deleteEntry(id) {
+    try {
+      const res = await fetch('/history/' + id, { method: 'DELETE' });
+      if (res.ok) {
+        refreshHistory();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete');
+      }
+    } catch (e) {
+      alert('Network error');
+    }
+  }
+
+  async function clearAllHistory() {
+    if (!confirm('Delete ALL history entries and their files?')) return;
+    try {
+      const res = await fetch('/history/', { method: 'DELETE' });
+      if (res.ok) {
+        refreshHistory();
+      }
+    } catch (e) {
+      alert('Network error');
+    }
+  }
+
+  /* --- Init --- */
+  function init() {
+    form().addEventListener('submit', handleSubmit);
+    // Close modal on overlay click
+    modal().addEventListener('click', function (e) {
+      if (e.target === this) closeModal();
+    });
+    // Close modal on Escape
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modal().classList.contains('open')) closeModal();
+    });
+    checkSession();
+  }
+
+  // Run init when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  return { openModal, closeModal, switchMode, logout, toggleHistory, refreshHistory, deleteEntry, clearAllHistory };
 })();
 </script>
 </body>

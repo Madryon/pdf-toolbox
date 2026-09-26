@@ -43,6 +43,23 @@ def list_history():
     ])
 
 
+@history_bp.delete("/<int:entry_id>")
+@login_required
+def delete_history_entry(entry_id):
+    entry = FileHistory.query.filter_by(id=entry_id, user_id=current_user.id).first()
+    if not entry:
+        return jsonify({"error": "not found"}), 404
+    path = Path(entry.output_path)
+    try:
+        if path.exists() and path.is_file():
+            path.unlink()
+    except OSError:
+        pass
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
 @history_bp.delete("/")
 @login_required
 def clear_history():

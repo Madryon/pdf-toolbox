@@ -16,4 +16,3 @@ python-docx>=1.1.0
 pytesseract>=0.3.10
 qrcode[pil]>=7.4.2
 APScheduler>=3.10.4
-psycopg2-binary>=2.9.9
