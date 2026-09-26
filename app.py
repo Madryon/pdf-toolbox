@@ -222,10 +222,13 @@ def convert_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     if len(paths) == 1:
+        safe_path = Path(paths[0]).resolve()
+        if OUTPUT_DIR.resolve() not in safe_path.parents:
+            return jsonify({"error": "invalid output path"}), 400
         g.tool_name = "convert"
         g.output_name = out_name
-        g.output_path = str(paths[0])
-        return send_file(paths[0], as_attachment=True, download_name=out_name)
+        g.output_path = str(safe_path)
+        return send_file(str(safe_path), as_attachment=True, download_name=out_name)
     zip_path = OUTPUT_DIR / f"{job_id}_converted.zip"
     pdftool.make_zip(paths, str(zip_path))
     g.tool_name = "convert"
@@ -356,12 +359,15 @@ def split_route():
             return jsonify({"error": "no output files generated"}), 400
 
         if len(paths) == 1:
+            safe_path = Path(paths[0]).resolve()
+            if out_dir.resolve() not in safe_path.parents:
+                return jsonify({"error": "invalid output path"}), 400
             g.tool_name = "split"
-            g.output_name = Path(paths[0]).name
-            g.output_path = str(paths[0])
+            g.output_name = safe_path.name
+            g.output_path = str(safe_path)
             return send_file(
-                paths[0], as_attachment=True,
-                download_name=Path(paths[0]).name,
+                str(safe_path), as_attachment=True,
+                download_name=safe_path.name,
                 mimetype="application/pdf",
             )
 
