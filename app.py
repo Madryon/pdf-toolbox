@@ -46,6 +46,14 @@ def _save_upload(file_storage, job_dir, original_name):
     return fp
 
 
+def _safe_output_path(path_value):
+    resolved = Path(path_value).resolve()
+    output_root = OUTPUT_DIR.resolve()
+    if output_root not in (resolved, *resolved.parents):
+        raise ValueError("invalid output path")
+    return str(resolved)
+
+
 def _cleanup_old(max_age_seconds=3600):
     cutoff = time.time() - max_age_seconds
     for d in (UPLOAD_DIR, OUTPUT_DIR):
@@ -230,10 +238,14 @@ def convert_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     if len(paths) == 1:
+        try:
+            safe_single_path = _safe_output_path(paths[0])
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
         g.tool_name = "convert"
         g.output_name = out_name
-        g.output_path = str(paths[0])
-        return send_file(paths[0], as_attachment=True, download_name=out_name)
+        g.output_path = safe_single_path
+        return send_file(safe_single_path, as_attachment=True, download_name=out_name)
     zip_path = OUTPUT_DIR / f"{job_id}_converted.zip"
     pdftool.make_zip(paths, str(zip_path))
     g.tool_name = "convert"
