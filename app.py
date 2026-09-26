@@ -232,8 +232,8 @@ def convert_route():
     if len(paths) == 1:
         g.tool_name = "convert"
         g.output_name = out_name
-        g.output_path = str(paths[0])
-        return send_file(paths[0], as_attachment=True, download_name=out_name)
+        g.output_path = str(out_path)
+        return send_file(str(out_path), as_attachment=True, download_name=out_name)
     zip_path = OUTPUT_DIR / f"{job_id}_converted.zip"
     pdftool.make_zip(paths, str(zip_path))
     g.tool_name = "convert"
