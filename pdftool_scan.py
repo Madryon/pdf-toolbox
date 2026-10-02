@@ -11,17 +11,12 @@ Premium document scanner functions:
 - Multi-page scan -> PDF -> DOCX
 """
 
-import io
 import os
-import math
-import uuid
-import shutil
-import zipfile
 from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image, ImageEnhance, ImageFilter
 
 # OCR is optional — only works if the tesseract BINARY is installed.
 # Importing the pytesseract package always succeeds once it's pip-installed,
@@ -65,19 +60,6 @@ def _load_image(path_or_bytes):
     return bgr
 
 
-def _save_pil(img, path, fmt=None, quality=92):
-    if fmt is None:
-        fmt = Path(path).suffix.lstrip(".").upper() or "PNG"
-    fmt = fmt.upper()
-    if fmt in ("JPG", "JPEG"):
-        img = img.convert("RGB")
-        img.save(path, "JPEG", quality=quality, optimize=True)
-    elif fmt == "PNG":
-        img.save(path, "PNG", optimize=True)
-    elif fmt == "WEBP":
-        img.save(path, "WEBP", quality=quality, method=6)
-    else:
-        img.save(path, fmt)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -254,6 +236,13 @@ def rotate_image(image_bgr, angle):
     if not angle:
         return image_bgr
     angle = float(angle) % 360
+    # Lossless path for orthogonal rotations
+    if angle == 90:
+        return cv2.rotate(image_bgr, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    if angle == 180:
+        return cv2.rotate(image_bgr, cv2.ROTATE_180)
+    if angle == 270:
+        return cv2.rotate(image_bgr, cv2.ROTATE_90_CLOCKWISE)
     h, w = image_bgr.shape[:2]
     M = cv2.getRotationMatrix2D((w / 2, h / 2), angle, 1.0)
     cos = abs(M[0, 0]); sin = abs(M[0, 1])
@@ -263,7 +252,8 @@ def rotate_image(image_bgr, angle):
     M[1, 2] += nh / 2 - h / 2
     return cv2.warpAffine(image_bgr, M, (nw, nh),
                           flags=cv2.INTER_CUBIC,
-                          borderMode=cv2.BORDER_REPLICATE)
+                          borderMode=cv2.BORDER_CONSTANT,
+                          borderValue=(255, 255, 255))
 
 
 # ─────────────────────────────────────────────────────────────
@@ -367,23 +357,10 @@ def images_to_pdf_simple(image_paths, output_path):
 
 
 def images_to_docx(image_paths, output_path, ocr_lang="eng", use_ocr=True):
-    """
-    Pipeline:
-      1) Build a PDF from the processed images.
-      2) If OCR is enabled and tesseract is available, build a docx from the OCR text
-         (one section per page, text + page heading). Otherwise, convert PDF -> docx
-         using pdf2docx (image-only pages still get a working .docx).
-    """
-    # Step 1: build PDF
-    tmp_pdf = str(output_path) + ".intermediate.pdf"
-    images_to_pdf_simple(image_paths, tmp_pdf)
-
     if use_ocr and TESSERACT_AVAILABLE:
-        # Build a real text docx with OCR'd content per page
         from docx import Document
         from docx.shared import Pt, Inches
         doc = Document()
-        # Page-size A4
         for sec in doc.sections:
             sec.top_margin = Inches(0.7)
             sec.bottom_margin = Inches(0.7)
@@ -408,24 +385,22 @@ def images_to_docx(image_paths, output_path, ocr_lang="eng", use_ocr=True):
                 nr.italic = True
                 nr.font.size = Pt(10)
 
-            # Page break between pages (not after the last one)
             if idx < len(image_paths):
                 doc.add_page_break()
 
         doc.save(str(output_path))
     else:
-        # Fallback: PDF -> DOCX (image-based, still a valid docx)
+        tmp_pdf = str(output_path) + ".intermediate.pdf"
+        images_to_pdf_simple(image_paths, tmp_pdf)
         from pdf2docx import Converter
         cv = Converter(tmp_pdf)
         try:
             cv.convert(str(output_path))
         finally:
             cv.close()
-
-    # cleanup intermediate pdf
-    try:
-        os.remove(tmp_pdf)
-    except OSError:
-        pass
+        try:
+            os.remove(tmp_pdf)
+        except OSError:
+            pass
 
     return output_path

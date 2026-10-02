@@ -1628,6 +1628,32 @@
     background: var(--stamp);
     color: #fff;
   }
+  .auth-note {
+    display: block;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text-faint, #888);
+    padding: 8px 14px;
+    margin-top: 6px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.03);
+    border: 1px dashed rgba(0,0,0,0.12);
+    transition: opacity 0.3s;
+  }
+  .auth-note strong {
+    color: var(--brass, #b8860b);
+  }
+  .auth-note.hidden {
+    display: none;
+  }
+  [data-theme="dark"] .auth-note {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.1);
+  }
+  [data-theme="baddie"] .auth-note {
+    background: rgba(20, 0, 40, 0.4);
+    border-color: rgba(255, 46, 147, 0.2);
+  }
 </style>
 </head>
 <body>
@@ -1663,6 +1689,11 @@
   <!-- Auth bar: login/register or user info -->
   <div class="auth-bar" id="authBar">
     <!-- JS will populate this -->
+  </div>
+
+  <!-- Login benefits note -->
+  <div class="auth-note" id="authNote">
+    <span>💡</span> <strong>Create a free account</strong> to track your file history, re-download past files, and unlock future premium features.
   </div>
 
   <!-- History panel (shown when logged-in user clicks History) -->
@@ -3858,13 +3889,16 @@ const Auth = (function () {
   function renderBar() {
     const b = bar();
     if (!b) return;
+    const note = document.getElementById('authNote');
     if (currentUser) {
+      if (note) note.classList.add('hidden');
       b.innerHTML = `
         <span class="auth-user">Welcome, <strong>${esc(currentUser.username)}</strong></span>
         <button type="button" onclick="Auth.toggleHistory()">📁 History</button>
         <button type="button" class="auth-logout" onclick="Auth.logout()">Logout</button>
       `;
     } else {
+      if (note) note.classList.remove('hidden');
       b.innerHTML = `
         <button type="button" onclick="Auth.openModal('login')">Log In</button>
         <button type="button" onclick="Auth.openModal('register')">Register</button>

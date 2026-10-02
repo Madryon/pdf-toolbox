@@ -369,7 +369,9 @@ def _extract_frames_ffmpeg(input_path, output_dir, fmt="png", quality=85,
     cmd = [ffmpeg, "-y", "-i", str(input_path)]
     if vf_parts:
         cmd += ["-vf", ",".join(vf_parts)]
-    if ext in ("jpg", "webp"):
+    if ext == "webp":
+        cmd += ["-q:v", str(max(1, min(100, int(quality))))]
+    elif ext == "jpg":
         cmd += ["-q:v", str(_quality_to_ffmpeg_qscale(quality))]
     if max_frames:
         cmd += ["-frames:v", str(max_frames)]
@@ -386,7 +388,7 @@ def _extract_frames_ffmpeg(input_path, output_dir, fmt="png", quality=85,
     return paths
 
 
-def video_to_frames(input_path, output_dir, fmt="png", quality=85, max_frames=None, fps=10):
+def video_to_frames(input_path, output_dir, fmt="png", quality=85, max_frames=None, fps=10, max_dimension=None):
     """
     Extract frames from a video file (ffmpeg-backed, fast).
 
@@ -403,7 +405,7 @@ def video_to_frames(input_path, output_dir, fmt="png", quality=85, max_frames=No
     """
     return _extract_frames_ffmpeg(
         input_path, output_dir, fmt=fmt, quality=quality,
-        max_frames=max_frames, fps=fps,
+        max_frames=max_frames, fps=fps, max_dimension=max_dimension,
     )
 
 
@@ -427,10 +429,16 @@ def video_to_pdf(input_path, output_path, quality=75, max_frames=None, fps=10, m
             max_frames=max_frames, fps=fps, max_dimension=max_dimension,
         )
 
-        images = [_to_rgb(Image.open(p)) for p in frame_paths]
-        first, *rest = images
-        first.save(output_path, "PDF", save_all=True, append_images=rest,
-                    resolution=72.0, quality=quality)
+        first_img = _to_rgb(Image.open(frame_paths[0]))
+
+        def _lazy_frames():
+            for p in frame_paths[1:]:
+                img = _to_rgb(Image.open(p))
+                yield img
+
+        first_img.save(output_path, "PDF", save_all=True,
+                       append_images=_lazy_frames(),
+                       resolution=72.0, quality=quality)
 
     return output_path
 

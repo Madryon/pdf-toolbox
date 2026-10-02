@@ -498,7 +498,12 @@ def video_to_mp3_route():
     f = request.files.get("file")
     if not f or not f.filename:
         return jsonify({"error": "no file provided"}), 400
+    ext = Path(f.filename).suffix.lower()
+    if ext not in pdftool.VIDEO_EXTENSIONS:
+        return jsonify({"error": f"unsupported video format: {ext}"}), 400
     bitrate = request.form.get("bitrate", "192k")
+    if bitrate not in ("64k", "128k", "192k", "256k", "320k"):
+        bitrate = "192k"
 
     job_id = uuid.uuid4().hex
     job_dir = UPLOAD_DIR / job_id
@@ -521,10 +526,6 @@ def video_to_mp3_route():
         str(out_path), as_attachment=True,
         download_name=out_name, mimetype="audio/mpeg",
     )
-
-
-# NEW: Video Downloader (download from a URL via yt-dlp; 1000s of sites)
-
 
 
 
@@ -790,6 +791,9 @@ def scan_process_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    g.tool_name = "scan/process"
+    g.output_name = f"{job_id}_scan.jpg"
+    g.output_path = str(out_path)
     return send_file(
         str(out_path), as_attachment=False,
         download_name=f"{job_id}_scan.jpg",
