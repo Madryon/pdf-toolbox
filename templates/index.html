@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maddy Files</title>
+<title>Funk Files</title>
 <link rel="icon" type="image/png" href="/static/logo.png">
 <link rel="apple-touch-icon" href="/static/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,8 +44,8 @@ footer{margin-top:30px;padding-top:18px;border-top:1px dashed var(--ink-line);te
 @keyframes spin{to{transform:rotate(360deg)}}
 [data-theme=baddie] :is(.panel,.tool-card,.history-panel,.ticket,.modal-box){background:rgba(20,0,40,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,46,147,.28);box-shadow:0 8px 32px rgba(176,38,255,.18)}
 [data-theme=baddie] :is(.dropzone,.options){background:rgba(20,0,40,.4)}
-[data-theme=baddie] :is(.submit-btn,header h1){background:linear-gradient(90deg,#FF2E93,#B026FF,#00F0FF,#FF2E93);background-size:220% 100%;animation:rainbow 5s linear infinite}
-[data-theme=baddie] header h1{-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 12px rgba(255,46,147,.45))}
+[data-theme=baddie] .submit-btn{background:linear-gradient(90deg,#FF2E93,#B026FF,#00F0FF,#FF2E93);background-size:220% 100%;animation:rainbow 5s linear infinite}
+[data-theme=baddie] header h1{background:linear-gradient(90deg,#FF2E93,#B026FF,#00F0FF,#FF2E93) 0 0/220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:rainbow 5s linear infinite;filter:drop-shadow(0 0 12px rgba(255,46,147,.45))}
 [data-theme=baddie] .submit-btn{box-shadow:0 3px 0 var(--stamp-deep),0 0 26px rgba(255,46,147,.45);text-shadow:0 0 8px rgba(0,0,0,.4)}
 [data-theme=baddie] :is(.tab.active,.split-type-btn.active,.filter-chip.active){box-shadow:0 0 22px rgba(255,46,147,.55),inset 0 0 0 1px rgba(0,240,255,.4)}
 [data-theme=baddie] :is(.ticket-download,.scan-btn.primary){background:linear-gradient(135deg,#FF2E93,#B026FF);border:0;box-shadow:0 0 16px rgba(255,46,147,.45)}
@@ -523,7 +523,7 @@ const T = [
  { id:'video', cat:'Video Tools', tab:'Video', name:'Video to Images / PDF', desc:'Extract frames from any video as Images or compile them into a single PDF document.',
    icon:'<rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 9l4 3-4 3V9z"/>',
    dz:['Drop a video file here','MP4 · AVI · MOV · MKV · WMV · WEBM · FLV · MPEG',0,'video/*,.mkv,.m4v,.mpeg,.mpg,.3gp'], btn:'Process Video',
-   note:'<div class="hint-text" style="margin-top:8px;color:var(--stamp);font-weight:600">⚠️ Set FPS between 1 to 60 for best results. Leave empty for auto (all frames).</div>',
+   note:'<div class="hint-text" style="margin-top:8px;color:var(--stamp);font-weight:600">⚠️ Set FPS between 1 to 60 for best results. File Size should be less then 49 MB .</div>',
    modes:[
      { l:'Extract Frames (ZIP)', url:'/video-to-images', out:out('_frames.zip', 'Frames extracted as ZIP'),
        f:[['format','Output format','select','png','png:PNG|jpg:JPEG|webp:WebP'],['quality','Quality','range',85,'min=10 max=100'],['fps','Target FPS','number','','min=1 max=60 placeholder=auto data-opt'],['max_frames','Max frames','number','','min=1 placeholder=all data-opt']] },
