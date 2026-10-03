@@ -377,7 +377,12 @@ def _extract_frames_ffmpeg(input_path, output_dir, fmt="png", quality=85,
         cmd += ["-frames:v", str(max_frames)]
     cmd += [out_pattern]
 
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=600)
+    result = subprocess.run(
+        cmd, 
+        stdout=subprocess.DEVNULL, 
+        stderr=subprocess.PIPE, 
+        timeout=600
+    )
     if result.returncode != 0:
         stderr = result.stderr.decode(errors="ignore")[-1500:]
         raise ValueError(f"ffmpeg failed to extract frames: {stderr}")

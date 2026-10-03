@@ -54,7 +54,7 @@ def extract_audio(in_path: str, out_path: str, bitrate: str = "192k") -> str:
     try:
         result = subprocess.run(
             cmd,
-            stdout=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
             timeout=600,
         )
