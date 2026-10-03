@@ -420,7 +420,7 @@ def video_to_images_route():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        paths = pdftool.video_to_frames(
+        paths = vidtool.video_to_images(
             str(in_path), str(out_dir),
             fmt=fmt, quality=quality,
             max_frames=max_frames, fps=target_fps
@@ -439,6 +439,8 @@ def video_to_images_route():
             download_name=f"{in_path.stem}_frames.zip",
             mimetype="application/zip",
         )
+    except vidtool.VideoToolError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

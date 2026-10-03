@@ -66,3 +66,24 @@ def extract_audio(in_path: str, out_path: str, bitrate: str = "192k") -> str:
         raise VideoToolError(f"ffmpeg failed to extract audio: {stderr}")
 
     return out_path
+import pdftool
+
+def video_to_images(in_path: str, out_dir: str, fmt: str = "png", quality: int = 85,
+                    max_frames: int | None = None, fps: int | None = None, max_dimension: int | None = None) -> list[str]:
+    """Extract video frames to images using pdftool.video_to_frames.
+
+    Wraps any OSError from ffmpeg/I/O with a user‑friendly VideoToolError.
+    Returns list of image file paths.
+    """
+    try:
+        return pdftool.video_to_frames(
+            str(in_path), str(out_dir), fmt=fmt, quality=quality,
+            max_frames=max_frames, fps=fps, max_dimension=max_dimension
+        )
+    except OSError as e:
+        raise VideoToolError(f"Failed to process video due to I/O error: {e}")
+    except Exception as e:
+        # Re‑raise known VideoToolError or wrap unexpected errors
+        if isinstance(e, VideoToolError):
+            raise
+        raise VideoToolError(str(e))
